@@ -1,7 +1,7 @@
 {
     "files.exclude": {
         "src": true,
-        "build": true,
+        //"build": true,
         ".sconsign.dblite": true,
         "pyrightconfig.json": true,
     },
