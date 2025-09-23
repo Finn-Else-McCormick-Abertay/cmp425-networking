@@ -16,19 +16,30 @@
 	],
 	"settings": {
 		"git.openRepositoryInParentFolders": "always",
+		"files.exclude": {
+			"src": true,
+		},
 		"files.associations": {
 			"xstring": "cpp",
-			"optional": "cpp"
+			"optional": "cpp",
+			"deque": "cpp",
+			"string": "cpp",
+			"unordered_map": "cpp",
+			"unordered_set": "cpp",
+			"vector": "cpp",
+			"system_error": "cpp",
+			"*.cxx": "cpp",
+			"iostream": "cpp"
 		},
     	"C_Cpp.default.compilerPath": "gcc.exe",
         "C_Cpp.default.windowsSdkVersion": "10.0.22621.0",
-		"C_Cpp.default.cStandard": "c17",
-		"C_Cpp.default.cppStandard": "c++17",
+		"C_Cpp.default.cStandard": "c23",
+		"C_Cpp.default.cppStandard": "c++23",
 		"C_Cpp.default.intelliSenseMode": "windows-gcc-x64",
 		"C_Cpp.default.includePath": [
 			"${workspaceFolder}/**",
 			"${workspaceFolder}/../shared/**",
-			"${workspaceFolder}/../../lib/SFML-3.0.2/include"
+			"${workspaceFolder}/../../lib/SFML-3.0.2/include",
 		],
 		"C_Cpp.default.defines": [
 			"_DEBUG",

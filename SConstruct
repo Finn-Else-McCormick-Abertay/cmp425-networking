@@ -5,6 +5,9 @@ from SCons.Script import (
 )
 import os
 
+def GlobCxxFilesIn(folder):
+    return Glob(folder + '/*.cpp') + Glob(folder + '/*.cxx') + Glob(folder + '/*.cc')
+
 class Dependency:
     def __init__(self, name, libs = []):
         self.name = name
@@ -39,17 +42,27 @@ class Dependency:
         pass
 
 class LocalDependency(Dependency):
-    def __init__(self, folder, env):
+    def __init__(self, folder, dependencies=[], env=None):
         self.name = folder
 
         self.libs = [self.name]
         self.libpath = 'build/' + folder
         self.includepath = 'src/' + folder
-        self.source = Glob(self.libpath + '/*.cpp')
+        self.source = GlobCxxFilesIn(self.libpath)
         self.rootpath = ''
+
+        if not env:
+            env = base_env
+        env = env.Clone()
+
+        for dependency in dependencies:
+            dependency.add_to_env(env)
 
         self.add_to_env(env)
         self.lib = env.Library(target=self.libpath + '/' + self.name, source=self.source)
+        
+        for dependency in dependencies:
+            dependency.require_for(self.lib)
     
     def require_for(self, program):
         Depends(program, self.lib)
@@ -60,7 +73,7 @@ def create_program(name, dependencies = []):
     env.Append(CPPPATH=['src/' + name])
     for dependency in dependencies:
         dependency.add_to_env(env)
-    program = env.Program(target='build/' + name, source=Glob('build/' + name + '/*.cpp'))
+    program = env.Program(target='build/' + name, source=GlobCxxFilesIn('build/' + name))
     for dependency in dependencies:
         dependency.require_for(program)
     return program
@@ -68,16 +81,17 @@ def create_program(name, dependencies = []):
 # -------------
 
 # Setup build environment
-base_env = Environment(tools=["mingw"], ENV = os.environ, CC = 'gcc', CCFLAGS = '-O2')
+base_env = Environment(tools=["mingw"], ENV = os.environ, CC = 'gcc', CCFLAGS = ['-O2', '-std=c++23']) #'-fmodules', '-include', 'bits/stdc++.h'
 base_env.VariantDir(variant_dir='build', src_dir='src', duplicate=0)
-
-# Build shared files as a library
-shared_lib = LocalDependency('shared', base_env)
 
 # SFML dependencies
 sfml_graphics = Dependency('SFML-3.0.2', ['sfml-window', 'sfml-graphics'])
+#sfml_audio = Dependency('SFML-3.0.2', 'sfml-audio')
 sfml_system = Dependency('SFML-3.0.2', 'sfml-system')
 sfml_network = Dependency('SFML-3.0.2', 'sfml-network')
+
+# Build shared files as a library
+shared_lib = LocalDependency('shared', [sfml_network])
 
 # Client build
 create_program('client', [shared_lib, sfml_system, sfml_network, sfml_graphics])

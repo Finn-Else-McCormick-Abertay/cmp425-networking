@@ -53,3 +53,6 @@ build/
 # Lib folder
 lib/**
 !lib/.gitkeep
+
+# Module cache
+gcm.cache/
