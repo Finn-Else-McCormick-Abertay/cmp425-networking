@@ -1,5 +1,10 @@
-#include <stdio.h>
+#include <iostream>
+
+#include <client.h>
+#include <util.h>
+
+using namespace std;
 
 int main() {
-    printf("Hello, client!\n");
+    cout << "Hello, client!\n" << TestClass::test() << '\n' << util::test_function();
 }

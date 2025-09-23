@@ -1,5 +1,9 @@
-#include <stdio.h>
+#include <iostream>
+
+#include <util.h>
+
+using namespace std;
 
 int main() {
-    printf("Hello, server!\n");
+    cout << "Hello, server!\n" << util::test_function();
 }

@@ -1,0 +1,48 @@
+{
+	"folders": [
+		{
+			"path": "../.vscode"
+		},
+		{
+			"name": "root",
+			"path": ".."
+		},
+		{
+			"path": "../src/client"
+		},
+		{
+			"path": "../src/server"
+		},
+		{
+			"path": "../src/shared"
+		},
+	],
+	"settings": {
+		"git.openRepositoryInParentFolders": "always",
+		"files.associations": {
+			"xstring": "cpp"
+		},
+		"files.exclude": {
+            "src": true,
+            "build": true,
+            ".sconsign.dblite": true,
+            ".vscode": true,
+        },
+		
+    	"C_Cpp.default.compilerPath": "cl.exe",
+        "C_Cpp.default.windowsSdkVersion": "10.0.22621.0",
+		"C_Cpp.default.cStandard": "c17",
+		"C_Cpp.default.cppStandard": "c++17",
+		"C_Cpp.default.intelliSenseMode": "windows-msvc-x64",
+		"C_Cpp.default.includePath": [
+			"${workspaceFolder}/**",
+			"${workspaceFolder}/../shared/**",
+			"${vcpkgRoot}/x64-windows/include"
+		],
+		"C_Cpp.default.defines": [
+			"_DEBUG",
+			"UNICODE",
+			"_UNICODE"
+		],
+	}
+}
