@@ -1,3 +1,6 @@
+from SCons.Environment import Environment
+from SCons.Script import Glob
+
 base_env = Environment(CPPPATH=['src/shared'])
 base_env.VariantDir('build', 'src', duplicate=0)
 
