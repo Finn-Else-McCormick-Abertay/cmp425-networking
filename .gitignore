@@ -49,3 +49,6 @@ config.log
 
 # Build folder
 build/
+
+# Lib folder
+lib/**
