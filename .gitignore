@@ -52,3 +52,4 @@ build/
 
 # Lib folder
 lib/**
+!lib/.gitkeep

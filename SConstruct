@@ -8,7 +8,6 @@ import os
 class Dependency:
     def __init__(self, name, libs = []):
         self.name = name
-        self.installed = []
 
         if isinstance(libs, str):
             self.libs = [libs]
@@ -18,6 +17,15 @@ class Dependency:
         self.rootpath = 'lib/' + self.name
         self.libpath = self.rootpath + '/lib'
         self.includepath = self.rootpath + '/include'
+        
+        dlls = Glob(self.rootpath + '/bin/*.dll')
+        if dlls:
+            base_env.Install('build/', dlls)
+            
+        #for lib in self.libs:
+        #    relevant_dlls = Glob(self.rootpath + '/bin/' + lib + '*.dll')
+        #    if relevant_dlls:
+        #        base_env.Install('build/', relevant_dlls)
     
     def add_to_env(self, env):
         if self.libs:
@@ -26,13 +34,6 @@ class Dependency:
             env.Append(LIBPATH=[self.libpath])
         if self.includepath:
             env.Append(CPPPATH=[self.includepath])
-        
-        for lib in self.libs:
-            if not lib in self.installed:
-                self.installed += lib
-                relevant_dlls = Glob(self.rootpath + '/bin/' + lib + '*.dll')
-                if relevant_dlls:
-                    base_env.Install('build/', relevant_dlls)
     
     def require_for(self, program):
         pass
@@ -40,7 +41,6 @@ class Dependency:
 class LocalDependency(Dependency):
     def __init__(self, folder, env):
         self.name = folder
-        self.installed = []
 
         self.libs = [self.name]
         self.libpath = 'build/' + folder
