@@ -47,5 +47,65 @@
 			"_UNICODE"
 		],
 		"files.eol": "\n",
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "SCons Build",
+				"command": "scons",
+				"type": "shell",
+				"group": "build",
+				"problemMatcher": "$msCompile"
+			},
+			{
+				"label": "Launch Client",
+				"command": "${workspaceFolder:root}/build/client.exe",
+				"type": "shell",
+				"problemMatcher": []
+			},
+			{
+				"label": "Build & Launch Client",
+				"dependsOrder": "sequence",
+				"dependsOn": [
+					"SCons Build",
+					"Launch Client"
+				]
+			}
+		]
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Launch Client",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"preLaunchTask": "SCons Build",
+				"program": "${workspaceFolder:root}/build/client.exe",
+				"args": [],
+				"stopAtEntry": false,
+				"cwd": "${fileDirname}",
+				"environment": []
+			},
+			{
+				"name": "Launch Server",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"preLaunchTask": "SCons Build",
+				"program": "${workspaceFolder:root}/build/server.exe",
+				"args": [],
+				"stopAtEntry": false,
+				"cwd": "${fileDirname}",
+				"environment": [],
+				"console": "externalTerminal"
+			},
+		],
+		"compounds": [
+        {
+            "name": "Server/Client",
+            "configurations": ["Launch Server", "Launch Client"]
+        }
+    ]
 	}
 }

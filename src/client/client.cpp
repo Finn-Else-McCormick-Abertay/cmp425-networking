@@ -1,6 +1,7 @@
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
 #include <optional>
+#include <iostream>
 
 using namespace std;
 using namespace sf;
@@ -17,6 +18,8 @@ void render(RenderWindow& window) {
 }
 
 int main() {
+    cout << "Client init";
+
     RenderWindow window(VideoMode({800, 600}), "CMP425 Coursework");
     while (window.isOpen()) {
         // check all the window's events that were triggered since the last iteration of the loop
