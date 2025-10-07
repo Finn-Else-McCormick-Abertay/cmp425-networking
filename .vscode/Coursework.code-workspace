@@ -55,22 +55,11 @@
 				"label": "SCons Build",
 				"command": "scons",
 				"type": "shell",
-				"group": "build",
+				"group": {
+					"kind": "build",
+					"isDefault": true
+				},
 				"problemMatcher": "$msCompile"
-			},
-			{
-				"label": "Launch Client",
-				"command": "${workspaceFolder:root}/build/client.exe",
-				"type": "shell",
-				"problemMatcher": []
-			},
-			{
-				"label": "Build & Launch Client",
-				"dependsOrder": "sequence",
-				"dependsOn": [
-					"SCons Build",
-					"Launch Client"
-				]
 			}
 		]
 	},
