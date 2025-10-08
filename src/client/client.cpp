@@ -18,7 +18,7 @@ void render(RenderWindow& window) {
 }
 
 int main() {
-    cout << "Client init";
+    cout << "Client init" << endl;
 
     RenderWindow window(VideoMode({800, 600}), "CMP425 Coursework");
     while (window.isOpen()) {

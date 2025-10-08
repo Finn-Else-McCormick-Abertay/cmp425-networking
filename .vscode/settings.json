@@ -1,8 +1,24 @@
 {
-    "files.exclude": {
-        "src": true,
-        //"build": true,
-        ".sconsign.dblite": true,
-        "pyrightconfig.json": true,
+    "files.associations": {
+        "xstring": "cpp",
+        "optional": "cpp",
+        "deque": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp",
+        "unordered_set": "cpp",
+        "vector": "cpp",
+        "system_error": "cpp",
+        "*.cxx": "cpp",
+        "iostream": "cpp",
+        "ostream": "cpp"
     },
+    "C_Cpp.default.cStandard": "c23",
+    "C_Cpp.default.cppStandard": "c++23",
+    "C_Cpp.default.defines": [
+        "_DEBUG",
+        "UNICODE",
+        "_UNICODE"
+    ],
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "files.eol": "\n",
 }

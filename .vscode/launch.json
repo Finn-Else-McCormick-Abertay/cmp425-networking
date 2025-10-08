@@ -1,0 +1,34 @@
+{
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Launch Client",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"preLaunchTask": "CMake: build",
+				"program": "${workspaceFolder}/build/Debug/NetworkingCoursework_client.exe",
+				"args": [],
+				"stopAtEntry": false,
+				"cwd": "${fileDirname}",
+				"environment": []
+			},
+			{
+				"name": "Launch Server",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"preLaunchTask": "CMake: build",
+				"program": "${workspaceFolder}/build/Debug/NetworkingCoursework_server.exe",
+				"args": [],
+				"stopAtEntry": false,
+				"cwd": "${fileDirname}",
+				"environment": [],
+				"console": "externalTerminal"
+			},
+		],
+		"compounds": [
+        {
+            "name": "Server/Client",
+            "configurations": ["Launch Server", "Launch Client"]
+        }
+    ]
+}

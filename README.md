@@ -1,5 +1,5 @@
 
 # Building
 
-This is currently set up to use gcc. On Windows, you should install [MSYS2](https://www.msys2.org/), and use that to install gcc.
-The build script will automatically download the relevant dependencies to the `lib` folder on first build.
+Build with CMake 3.28 or later.
+The configure step will automatically download any dependencies that it can't find on your system.
