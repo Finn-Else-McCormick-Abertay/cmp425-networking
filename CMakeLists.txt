@@ -2,7 +2,11 @@ cmake_minimum_required(VERSION 3.28)
 
 project(NetworkingCoursework VERSION 0.0.1 LANGUAGES CXX)
 
+# -- Dependencies --
+
 include(FetchContent)
+
+# SFML
 FetchContent_Declare(SFML
   GIT_REPOSITORY https://github.com/SFML/SFML.git GIT_TAG 3.0.2
   GIT_SHALLOW ON EXCLUDE_FROM_ALL SYSTEM
@@ -10,6 +14,7 @@ FetchContent_Declare(SFML
 )
 FetchContent_MakeAvailable(SFML)
 
+# Box2D & C++ bindings
 FetchContent_Declare(box2d
   GIT_REPOSITORY https://github.com/erincatto/box2d GIT_TAG v3.1.1
   GIT_SHALLOW ON EXCLUDE_FROM_ALL SYSTEM
@@ -25,22 +30,47 @@ add_library(box2cpp INTERFACE)
 target_include_directories(box2cpp SYSTEM INTERFACE ${FETCHCONTENT_BASE_DIR}/box2cpp-src/include)
 target_link_libraries(box2cpp INTERFACE box2d)
 
+# Quadtree
+FetchContent_Declare(quadtree
+  GIT_REPOSITORY https://github.com/red-9m/Quadtree.git GIT_TAG f6e221bdedd4ea03dec3c7b2268e6bd550b7d474 # Branch main
+  EXCLUDE_FROM_ALL SYSTEM
+)
+FetchContent_MakeAvailable(quadtree)
+add_library(quadtree INTERFACE)
+target_include_directories(quadtree SYSTEM INTERFACE ${FETCHCONTENT_BASE_DIR}/quadtree-src/)
 
-# Shared
-file(GLOB SHARED_SOURCES CONFIGURE_DEPENDS src/shared/*.cpp src/shared/*.h src/shared/*.hpp)
-add_library(${PROJECT_NAME}_shared STATIC ${SHARED_SOURCES})
-target_compile_features(${PROJECT_NAME}_shared PUBLIC cxx_std_23)
-target_include_directories(${PROJECT_NAME}_shared PUBLIC src/shared/)
-target_link_libraries(${PROJECT_NAME}_shared PUBLIC SFML::Network box2cpp)
+# vmath
+FetchContent_Declare(vmath.hpp
+  GIT_REPOSITORY https://github.com/BlackMATov/vmath.hpp.git GIT_TAG ed47c535f70c6a05a3bd5a65a90400c3843dfefc # Branch main
+  EXCLUDE_FROM_ALL SYSTEM
+)
+FetchContent_MakeAvailable(vmath.hpp)
+
+
+# -- Executables --
+
+set(COMMON_DEPS SFML::Network box2cpp quadtree vmath.hpp)
+set(CLIENT_DEPS SFML::Graphics SFML::Window SFML::Audio)
 
 # Client
-file(GLOB CLIENT_SOURCES CONFIGURE_DEPENDS src/client/*.cpp src/client/*.h src/client/*.hpp)
-add_executable(${PROJECT_NAME}_client ${CLIENT_SOURCES})
-target_compile_features(${PROJECT_NAME}_client PUBLIC cxx_std_23)
-target_link_libraries(${PROJECT_NAME}_client PRIVATE ${PROJECT_NAME}_shared SFML::Graphics SFML::Window SFML::Audio)
+set(CLIENT_NAME ${PROJECT_NAME}_client)
+add_executable(${CLIENT_NAME})
+target_compile_features(${CLIENT_NAME} PUBLIC cxx_std_23)
+target_link_libraries(${CLIENT_NAME} PRIVATE ${COMMON_DEPS} ${CLIENT_DEPS})
+target_include_directories(${CLIENT_NAME} PRIVATE src/client/)
+target_include_directories(${CLIENT_NAME} PRIVATE src/common/)
+target_compile_definitions(${CLIENT_NAME} PRIVATE CLIENT)
 
 # Server
-file(GLOB SERVER_SOURCES CONFIGURE_DEPENDS src/server/*.cpp src/server/*.h src/server/*.hpp)
-add_executable(${PROJECT_NAME}_server ${SERVER_SOURCES})
-target_compile_features(${PROJECT_NAME}_client PUBLIC cxx_std_23)
-target_link_libraries(${PROJECT_NAME}_server PRIVATE ${PROJECT_NAME}_shared)
+set(SERVER_NAME ${PROJECT_NAME}_server)
+add_executable(${SERVER_NAME})
+target_compile_features(${SERVER_NAME} PUBLIC cxx_std_23)
+target_link_libraries(${SERVER_NAME} PRIVATE ${COMMON_DEPS})
+target_include_directories(${SERVER_NAME} PRIVATE src/server/)
+target_include_directories(${SERVER_NAME} PRIVATE src/common/)
+target_compile_definitions(${SERVER_NAME} PRIVATE SERVER)
+
+# Define sources
+add_subdirectory(src/common)
+add_subdirectory(src/client)
+add_subdirectory(src/server)
