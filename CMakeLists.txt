@@ -49,7 +49,7 @@ FetchContent_MakeAvailable(vmath.hpp)
 
 # -- Executables --
 
-set(COMMON_DEPS SFML::Network box2cpp quadtree vmath.hpp)
+set(COMMON_DEPS SFML::System SFML::Network box2cpp quadtree vmath.hpp)
 set(CLIENT_DEPS SFML::Graphics SFML::Window SFML::Audio)
 
 # Client

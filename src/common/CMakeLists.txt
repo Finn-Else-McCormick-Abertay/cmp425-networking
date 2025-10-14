@@ -3,6 +3,8 @@ set(COMMON_SOURCES
     terrain/tile.cpp
     terrain/chunk.cpp
     terrain/world.cpp
+
+    util/console.cpp
 )
 
 target_sources(${CLIENT_NAME} PRIVATE ${COMMON_SOURCES})

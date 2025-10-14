@@ -1,44 +1,42 @@
-#include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
-#include <optional>
 #include <iostream>
+#include <util/console.h>
 
 #include <terrain/world.h>
 
+#include <window.h>
+#include <util/vec.h>
+
 using namespace std;
 
-void render(sf::RenderWindow& window, const World& world) {
-    window.clear(sf::Color::Black);
-    
-    sf::View view(sf::FloatRect({0.f, 0.f}, {300.f, 200.f}));
-    window.setView(view);
-
-    auto chunk_debug_rect = sf::RectangleShape(sf::Vector2f{ Chunk::SIZE_TILES.x, Chunk::SIZE_TILES.y });
-    for (auto& [coord, chunk] : world.chunks()) {
-        chunk_debug_rect.setPosition(sf::Vector2f( chunk.get_coords().x * Chunk::SIZE_TILES.x, chunk.get_coords().y * Chunk::SIZE_TILES.y ));
-        window.draw(chunk_debug_rect);
-    }
-
-    window.display();
-}
-
 int main() {
-    cout << "Client init" << endl;
+    console::info("Client init");
     
     auto world = World();
     world.set_chunk(ivec2{10, 2}, make_optional<Chunk>());
     world.set_chunk(ivec2{2, 1}, make_optional<Chunk>());
 
-    sf::RenderWindow window(sf::VideoMode({800, 600}), "CMP425 Coursework");
-    while (window.isOpen()) {
-        // check all the window's events that were triggered since the last iteration of the loop
-        while (const optional event = window.pollEvent()) {
-            // "close requested" event: we close the window
-            if (event->is<sf::Event::Closed>()) window.close();
+    Window window;
 
-            if (event->is<sf::Event::Resized>()) render(window, world);
+    window.set_close_request_callback([](Window& window) -> bool {
+        console::debug("Window: Close Requested");
+        return true;
+    });
+    window.set_on_resized_callback([](Window& window, uvec2 new_size) {
+        console::debug("Window: Resized to {}", new_size);
+    });
+    window.set_draw_callback([&world](sf::RenderTarget& target) {
+        float viewScale = 300;
+        float windowAspect = (float)target.getSize().y / target.getSize().x;
+
+        target.setView(sf::View({0.f, 0.f}, {viewScale / windowAspect, viewScale}));
+
+        auto chunk_debug_rect = sf::RectangleShape(sf::Vector2f{ Chunk::SIZE_TILES.x, Chunk::SIZE_TILES.y });
+        for (auto& [coord, chunk] : world.chunks()) {
+            chunk_debug_rect.setPosition(sf::Vector2f( chunk.get_coords().x * Chunk::SIZE_TILES.x, chunk.get_coords().y * Chunk::SIZE_TILES.y ));
+            target.draw(chunk_debug_rect);
         }
+    });
 
-        render(window, world);
-    }
+    window.enter_main_loop();
 }

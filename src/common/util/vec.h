@@ -2,6 +2,7 @@
 
 #include <vmath.hpp/vmath_vec.hpp>
 #include <vmath.hpp/vmath_vec_fun.hpp>
+#include <util/stream/vec.h>
 
 using vmath_hpp::fvec2;
 using vmath_hpp::fvec3;
@@ -10,3 +11,7 @@ using vmath_hpp::fvec4;
 using vmath_hpp::ivec2;
 using vmath_hpp::ivec3;
 using vmath_hpp::ivec4;
+
+using vmath_hpp::uvec2;
+using vmath_hpp::uvec3;
+using vmath_hpp::uvec4;
