@@ -1,4 +1,16 @@
 {
+    "C_Cpp.default.cStandard": "c23",
+    "C_Cpp.default.cppStandard": "c++23",
+    "C_Cpp.default.defines": [
+        "_DEBUG",
+        "UNICODE",
+        "_UNICODE"
+    ],
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "files.eol": "\n",
+    "explorer.autoRevealExclude": {
+        "build/**": true
+    },
     "files.associations": {
         "xstring": "cpp",
         "optional": "cpp",
@@ -82,15 +94,8 @@
         "xmemory": "cpp",
         "xtr1common": "cpp",
         "xutility": "cpp",
-        "print": "cpp"
+        "print": "cpp",
+        "cassert": "cpp",
+        "stdfloat": "cpp"
     },
-    "C_Cpp.default.cStandard": "c23",
-    "C_Cpp.default.cppStandard": "c++23",
-    "C_Cpp.default.defines": [
-        "_DEBUG",
-        "UNICODE",
-        "_UNICODE"
-    ],
-    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-    "files.eol": "\n",
 }

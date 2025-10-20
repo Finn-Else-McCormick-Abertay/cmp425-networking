@@ -9,7 +9,7 @@
 				"program": "${workspaceFolder}/build/Debug/NetworkingCoursework_client.exe",
 				"args": [],
 				"stopAtEntry": false,
-				"cwd": "${fileDirname}",
+				"cwd": "${workspaceFolder}",
 				"environment": []
 			},
 			{
@@ -20,7 +20,7 @@
 				"program": "${workspaceFolder}/build/Debug/NetworkingCoursework_server.exe",
 				"args": [],
 				"stopAtEntry": false,
-				"cwd": "${fileDirname}",
+				"cwd": "${workspaceFolder}",
 				"environment": [],
 				"console": "externalTerminal"
 			},

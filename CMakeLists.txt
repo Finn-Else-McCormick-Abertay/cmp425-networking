@@ -63,6 +63,7 @@ target_include_directories(${CLIENT_NAME} PRIVATE src/client/)
 target_include_directories(${CLIENT_NAME} PRIVATE src/common/)
 target_compile_definitions(${CLIENT_NAME} PRIVATE CLIENT ${COMMON_COMPILE_DEFINITIONS})
 
+
 # Server
 set(SERVER_NAME ${PROJECT_NAME}_server)
 add_executable(${SERVER_NAME})

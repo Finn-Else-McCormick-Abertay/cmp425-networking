@@ -7,7 +7,7 @@ using namespace std;
 using sf::Event;
 
 Window::Window(string title, uvec2 size) : _render_window(
-    sf::VideoMode(to_sf(size)),
+    sf::VideoMode(to_sfvec(size)),
     title,
     sf::Style::Default, // Window border
     sf::State::Windowed, // Windowed vs fullscreen
@@ -31,12 +31,51 @@ void Window::enter_main_loop() {
                 if (!_close_request_cb || _close_request_cb.value()(*this)) _render_window.close();
             }
 
-            if (event->is<Event::Resized>()) {
+            else if (event->is<Event::Resized>()) {
                 // Call resized callback if present
                 _on_resized_cb.and_then([this](auto&& func) { func(*this, to_vec(_render_window.getSize())); return _on_resized_cb; });
                 // Redraw window to account for new size
                 render();
             }
+
+            // -- Keyboard --
+
+            else if (bool is_pressed = event->is<Event::KeyPressed>(); is_pressed || event->is<Event::KeyReleased>()) {
+                // Key
+            }
+
+            // -- Mouse --
+
+            else if (bool is_pressed = event->is<Event::MouseButtonPressed>(); is_pressed || event->is<Event::MouseButtonReleased>()) {
+                // Mouse button
+            }
+
+            else if (event->is<Event::MouseMoved>()) {
+                // Mouse motion
+            }
+
+            else if (event->is<Event::MouseWheelScrolled>()) {
+                // Mouse scroll
+            }
+
+            else if (bool entered = event->is<Event::MouseEntered>(); entered || event->is<Event::MouseLeft>()) {
+                // Mouse entered or left window
+            }
+
+            // -- Controller --
+
+            else if (bool is_pressed = event->is<Event::JoystickButtonPressed>(); is_pressed || event->is<Event::JoystickButtonReleased>()) {
+                // Controller button
+            }
+
+            else if (event->is<Event::JoystickMoved>()) {
+                // Controller axis
+            }
+
+            else if (bool connected = event->is<Event::JoystickConnected>(); connected || event->is<Event::JoystickDisconnected>()) {
+                // Active controllers changed
+            }
+
         }
 
         // Render frame

@@ -11,8 +11,42 @@ public:
     std::optional<Chunk> chunk_at(ivec2 chunk_coords) const;
     bool set_chunk(ivec2 chunk_coords, const std::optional<Chunk>&, bool replace = true);
 
-    const std::map<ivec2, Chunk>& chunks() const;
-
 private:
     std::map<ivec2, Chunk> _chunk_map;
+
+public:
+    struct iterator {
+        using element_type = Chunk;     using difference_type = std::ptrdiff_t;
+        using pointer = element_type*;  using reference = element_type&;
+
+        reference operator*() const;    pointer operator->();
+        iterator& operator++();         iterator operator++(int);
+
+        friend bool operator== (const iterator& a, const iterator& b);
+        friend bool operator!= (const iterator& a, const iterator& b);
+    private:
+        std::map<ivec2, Chunk>::iterator _internal_it;
+        iterator(std::map<ivec2, Chunk>::iterator);
+        friend class World;
+    };
+
+    struct const_iterator {
+        using element_type = Chunk;             using difference_type = std::ptrdiff_t;
+        using pointer = const element_type*;    using reference = const element_type&;
+
+        reference operator*() const;            pointer operator->();
+        const_iterator& operator++();           const_iterator operator++(int);
+        
+        friend bool operator== (const const_iterator& a, const const_iterator& b);
+        friend bool operator!= (const const_iterator& a, const const_iterator& b);
+    private:
+        std::map<ivec2, Chunk>::const_iterator _internal_it;
+        const_iterator(std::map<ivec2, Chunk>::const_iterator);
+        friend class World;
+    };
+
+    iterator begin();
+    iterator end();
+    const_iterator cbegin() const;
+    const_iterator cend() const;
 };
