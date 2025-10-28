@@ -27,6 +27,8 @@ private:
     using tile_array_flat = std::array<Tile, SIZE_TILES.x * SIZE_TILES.y>;
     tile_array_flat _tiles;
 
+    void update_shape_of(const uvec2& pos);
+
 public:
     struct iterator {
         using difference_type = std::ptrdiff_t;

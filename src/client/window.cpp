@@ -84,7 +84,7 @@ void Window::enter_main_loop() {
 }
 
 void Window::render() {
-    _render_window.clear(sf::Color::Black);
+    _render_window.clear(sf::Color::Magenta);
     _draw_cb.and_then([this](auto&& func) { func(_render_window); return _draw_cb; });
     _render_window.display();
 }
