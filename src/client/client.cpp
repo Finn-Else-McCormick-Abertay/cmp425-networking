@@ -1,16 +1,24 @@
-#include <SFML/Graphics.hpp>
 #include <util/console.h>
-#include <terrain/world.h>
-#include <window.h>
 #include <util/prelude.h>
+
+#include <window.h>
+#include <input/input_manager.h>
+
+#include <SFML/Graphics.hpp>
+#include <terrain/world.h>
 
 #include <map>
 #include <iostream>
+
+#define __INPUT_ACTION_SYMBOL_DEFINITIONS__
+#include <input/actions.h>
 
 using namespace std;
 
 int main() {
     console::info("Client init");
+    InputManager::init();
+    InputManager::setup_default_binds();
     
     auto world = World();
 

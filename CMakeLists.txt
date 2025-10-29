@@ -53,21 +53,23 @@ set(COMMON_DEPS SFML::System SFML::Network box2cpp quadtree vmath.hpp)
 set(CLIENT_DEPS SFML::Graphics SFML::Window SFML::Audio)
 
 set(COMMON_COMPILE_DEFINITIONS $<$<CONFIG:Debug>:DEBUG> $<$<CONFIG:Release>:RELEASE>)
+set(COMMON_COMPILE_OPTIONS $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>)
 
 # Client
 set(CLIENT_NAME ${PROJECT_NAME}_client)
 add_executable(${CLIENT_NAME})
 target_compile_features(${CLIENT_NAME} PUBLIC cxx_std_23)
+target_compile_options(${CLIENT_NAME} PRIVATE ${COMMON_COMPILE_OPTIONS})
 target_link_libraries(${CLIENT_NAME} PRIVATE ${COMMON_DEPS} ${CLIENT_DEPS})
 target_include_directories(${CLIENT_NAME} PRIVATE src/client/)
 target_include_directories(${CLIENT_NAME} PRIVATE src/common/)
 target_compile_definitions(${CLIENT_NAME} PRIVATE CLIENT ${COMMON_COMPILE_DEFINITIONS})
 
-
 # Server
 set(SERVER_NAME ${PROJECT_NAME}_server)
 add_executable(${SERVER_NAME})
 target_compile_features(${SERVER_NAME} PUBLIC cxx_std_23)
+target_compile_options(${SERVER_NAME} PRIVATE ${COMMON_COMPILE_OPTIONS})
 target_link_libraries(${SERVER_NAME} PRIVATE ${COMMON_DEPS})
 target_include_directories(${SERVER_NAME} PRIVATE src/server/)
 target_include_directories(${SERVER_NAME} PRIVATE src/common/)

@@ -96,6 +96,7 @@
         "xutility": "cpp",
         "print": "cpp",
         "cassert": "cpp",
-        "stdfloat": "cpp"
+        "stdfloat": "cpp",
+        "typeindex": "cpp"
     },
 }

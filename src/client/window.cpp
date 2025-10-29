@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <util/vec_convert.h>
+#include <input/input_manager.h>
 
 using namespace std;
 using sf::Event;
@@ -24,8 +25,15 @@ void Window::set_close_request_callback(function<bool(Window&)>&& cb) { _close_r
 
 void Window::enter_main_loop() {
     while (is_open()) {
+        // Tick InputManager (for handling stuff like 'just pressed')
+        InputManager::inst().tick();
+
         // Poll input
         while (const optional event = _render_window.pollEvent()) {
+            // Send events to the input manager
+            if (event) { InputManager::inst().receive_event(event.value()); }
+
+            // Special handling for window management events
             if (event->is<Event::Closed>()) {
                 // If there is no callback or the callback returns true, close window
                 if (!_close_request_cb || _close_request_cb.value()(*this)) _render_window.close();
@@ -37,45 +45,6 @@ void Window::enter_main_loop() {
                 // Redraw window to account for new size
                 render();
             }
-
-            // -- Keyboard --
-
-            else if (bool is_pressed = event->is<Event::KeyPressed>(); is_pressed || event->is<Event::KeyReleased>()) {
-                // Key
-            }
-
-            // -- Mouse --
-
-            else if (bool is_pressed = event->is<Event::MouseButtonPressed>(); is_pressed || event->is<Event::MouseButtonReleased>()) {
-                // Mouse button
-            }
-
-            else if (event->is<Event::MouseMoved>()) {
-                // Mouse motion
-            }
-
-            else if (event->is<Event::MouseWheelScrolled>()) {
-                // Mouse scroll
-            }
-
-            else if (bool entered = event->is<Event::MouseEntered>(); entered || event->is<Event::MouseLeft>()) {
-                // Mouse entered or left window
-            }
-
-            // -- Controller --
-
-            else if (bool is_pressed = event->is<Event::JoystickButtonPressed>(); is_pressed || event->is<Event::JoystickButtonReleased>()) {
-                // Controller button
-            }
-
-            else if (event->is<Event::JoystickMoved>()) {
-                // Controller axis
-            }
-
-            else if (bool connected = event->is<Event::JoystickConnected>(); connected || event->is<Event::JoystickDisconnected>()) {
-                // Active controllers changed
-            }
-
         }
 
         // Render frame
