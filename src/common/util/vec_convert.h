@@ -38,8 +38,11 @@ template<typename T_Output, typename T_Input, size_t Size> vec<T_Output, Size> t
     return output_vec;
 }
 
-// Build vec, for good measure
-/*
-template<typename T, typename... Args> vec<T, sizeof...(Args)> to_vec(Args... args) { return vec<T, sizeof...(Args)>(args...); } 
-template<typename T_Output, typename... Args> vec<T_Output, sizeof...(Args)> to_vec_of(Args... args) { return vec<T_Output, sizeof...(Args)>((static_cast<T_Output>(args),...)); } 
-*/
+#define DEF_TO_VEC_ALIAS(prefix, type)\
+    template<typename T_Input> vec<type, 2> to_##prefix##vec(const sf::Vector2<T_Input>& vec) { return to_vec_of<type>(vec); }\
+    template<typename T_Input> vec<type, 3> to_fvec(const sf::Vector3<T_Input>& vec) { return to_vec_of<type>(vec); }\
+    template<typename T_Input, size_t Size> vec<type, Size> to_fvec(const vec<T_Input, Size>& vec) { return to_vec_of<type>(vec); }
+
+DEF_TO_VEC_ALIAS(f, float)
+DEF_TO_VEC_ALIAS(i, int)
+DEF_TO_VEC_ALIAS(u, unsigned)

@@ -97,6 +97,8 @@
         "print": "cpp",
         "cassert": "cpp",
         "stdfloat": "cpp",
-        "typeindex": "cpp"
+        "typeindex": "cpp",
+        "*.rh": "cpp"
     },
+    "C_Cpp.vcpkg.enabled": false,
 }

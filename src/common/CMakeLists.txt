@@ -4,6 +4,8 @@ set(COMMON_SOURCES
     terrain/chunk.cpp
     terrain/world.cpp
 
+    system/system_manager.cpp
+
     util/console/ansi.cpp
 )
 

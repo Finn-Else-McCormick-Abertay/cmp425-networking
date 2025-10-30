@@ -6,6 +6,7 @@
 
 #include <SFML/Graphics.hpp>
 #include <terrain/world.h>
+#include <player/interaction_system.h>
 
 #include <map>
 #include <iostream>
@@ -21,6 +22,7 @@ int main() {
     InputManager::setup_default_binds();
     
     auto world = World();
+    auto interaction_system = player::InteractionSystem();
 
     auto chunk = make_optional<Chunk>();
     chunk->set_tile_at({0, 1}, Tile(Tile::Stone));
