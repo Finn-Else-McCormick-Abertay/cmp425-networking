@@ -46,6 +46,9 @@ public:
     Type type() const; 
     Shape shape() const; void set_shape(Shape);
 
+    static bool should_connect(Type, Type);
+    bool should_connect_to(const Tile&);
+
 private:
     Type _type;
     Shape _shape;

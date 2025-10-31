@@ -64,10 +64,12 @@ void Chunk::set_chunk_neighbour(const ivec2& dir, Chunk* neighbour, bool recursi
 
 void Chunk::update_shape_of(const uvec2& pos) {
     Tile* tile = tile_at(pos);
-    map<ivec2, bool> same_type_in_dir;
+    if (tile->type() == Tile::Air) return;
+
+    map<ivec2, bool> should_connect_in_dir;
     for (int i = -1; i <= 1; ++i) { for (int j = -1; j <= 1; ++j) {
         if (i == 0 && j == 0) continue;
-        bool same_type = false;
+        bool should_connect = false;
 
         ivec2 nbr_dir = ivec2(i, j);
         ivec2 nbr_pos = nbr_dir + pos;
@@ -80,20 +82,20 @@ void Chunk::update_shape_of(const uvec2& pos) {
                     nbr_pos.x < 0 ? nbr_pos.x + SIZE_TILES : nbr_pos.x >= SIZE_TILES ? nbr_pos.x - SIZE_TILES : nbr_pos.x,
                     nbr_pos.y < 0 ? nbr_pos.y + SIZE_TILES : nbr_pos.y >= SIZE_TILES ? nbr_pos.y - SIZE_TILES : nbr_pos.y
                 );
-                same_type = neighbour_chunk->tile_at(other_chunk_nbr_pos)->type() == tile->type();
+                should_connect = tile->should_connect_to(*neighbour_chunk->tile_at(other_chunk_nbr_pos));
             }
-            else same_type = false;
+            else should_connect = false;
         }
-        else { same_type = tile_at(nbr_pos)->type() == tile->type(); }
+        else { should_connect = tile->should_connect_to(*tile_at(nbr_pos)); }
 
-        same_type_in_dir[nbr_dir] = same_type;
+        should_connect_in_dir[nbr_dir] = should_connect;
     }}
 
-    bool open_l = same_type_in_dir.at({-1, 0}), open_r = same_type_in_dir.at({1, 0});
-    bool open_t = same_type_in_dir.at({0, -1}), open_b = same_type_in_dir.at({0, 1});
+    bool open_l = should_connect_in_dir.at({-1, 0}), open_r = should_connect_in_dir.at({1, 0});
+    bool open_t = should_connect_in_dir.at({0, -1}), open_b = should_connect_in_dir.at({0, 1});
 
-    bool corner_lt = !same_type_in_dir.at({-1, -1}), corner_rt = !same_type_in_dir.at({1, -1});
-    bool corner_lb = !same_type_in_dir.at({-1, 1}), corner_rb = !same_type_in_dir.at({1, 1});
+    bool corner_lt = !should_connect_in_dir.at({-1, -1}), corner_rt = !should_connect_in_dir.at({1, -1});
+    bool corner_lb = !should_connect_in_dir.at({-1, 1}), corner_rb = !should_connect_in_dir.at({1, 1});
 
     // This is deeply ugly but I can't think of a better way to do it
     Tile::Shape shape = Tile::Shape::SINGLE;
@@ -109,6 +111,10 @@ void Chunk::update_shape_of(const uvec2& pos) {
         else if (corner_lb && corner_rt) { shape = Tile::Shape::OPEN_LRTB_CORNER_LB_RT; }
         else if (corner_lb && corner_rb) { shape = Tile::Shape::OPEN_LRTB_CORNER_LB_RB; }
         else if (corner_rt && corner_rb) { shape = Tile::Shape::OPEN_LRTB_CORNER_RT_RB; }
+        else if (corner_lt) { shape = Tile::Shape::OPEN_LRTB_CORNER_LT; }
+        else if (corner_lb) { shape = Tile::Shape::OPEN_LRTB_CORNER_LB; }
+        else if (corner_rt) { shape = Tile::Shape::OPEN_LRTB_CORNER_RT; }
+        else if (corner_rb) { shape = Tile::Shape::OPEN_LRTB_CORNER_RB; }
         else { shape = Tile::Shape::OPEN_LRTB; }
     }
     else if (open_l && open_r && open_t) {
