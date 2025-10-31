@@ -15,6 +15,9 @@
 #define __INPUT_ACTION_SYMBOL_DEFINITIONS__
 #include <input/actions.h>
 
+#define __TILE_SYMBOL_DEFINITIONS__
+#include <terrain/tiles.h>
+
 using namespace std;
 
 int main() {
@@ -29,12 +32,6 @@ int main() {
 
     Window window;
 
-    sf::Texture placeholder_texture = sf::Texture("resources/assets/textures/placeholder.png");
-    placeholder_texture.setRepeated(true);
-    
-    sf::Texture tileset = sf::Texture("resources/assets/textures/tileset/template.png");
-    tileset.setSmooth(false);
-
     window.set_close_request_callback([](Window& window) -> bool {
         console::debug("Window: Close Requested");
         return true;
@@ -46,17 +43,8 @@ int main() {
         chunk_debug_rect.setOutlineColor(sf::Color(255, 255, 255, 100));
         chunk_debug_rect.setOutlineThickness(1);
         chunk_debug_rect.setFillColor(sf::Color::Transparent);
-
-        auto make_tile_rect = [](sf::Color fill, sf::Color outline = sf::Color::Transparent) -> sf::RectangleShape {
-            sf::RectangleShape rect(sf_fvec2(Tile::SIZE, Tile::SIZE));
-            rect.setFillColor(fill); rect.setOutlineColor(outline); rect.setOutlineThickness(1);
-            return rect;
-        };
-        map<Tile::Type, sf::RectangleShape> tile_rects = {
-            {Tile::Air, make_tile_rect(sf::Color::Transparent)},
-            {Tile::Stone, make_tile_rect(sf::Color(255, 255, 255))},
-        };
-        tile_rects.at(Tile::Stone).setTexture(&tileset);
+        
+        sf::RectangleShape tile_rect(sf_fvec2(Tile::SIZE, Tile::SIZE));
 
         for (auto& chunk : world) {
             ivec2 chunk_true_coords(chunk.get_coords() * chunk_true_size);
@@ -67,14 +55,15 @@ int main() {
 
             // Draw tiles
             for (auto [local_pos, tile] : chunk) {
-                if (tile->type() == Tile::Air) continue;
-                auto& rect = tile_rects.at(tile->type());
-                rect.setPosition(to_sfvec_of<float>(chunk_true_coords + to_fvec(local_pos) * Tile::SIZE));
+                if (!tile->type().meta().display) continue;
+
+                tile_rect.setTexture(tile->type().texture());
+                tile_rect.setPosition(to_sfvec_of<float>(chunk_true_coords + to_fvec(local_pos) * Tile::SIZE));
 
                 uint8 shape = (uint8)tile->shape();
                 uvec2 texture_tile_index = uvec2(shape % 6, shape / 6);
-                rect.setTextureRect(sf::IntRect(to_sfvec_of<int>(texture_tile_index * Tile::SIZE), to_sfvec(ivec2(Tile::SIZE, Tile::SIZE))));
-                target.draw(rect);
+                tile_rect.setTextureRect(sf::IntRect(to_sfvec_of<int>(texture_tile_index * Tile::SIZE), to_sfvec(ivec2(Tile::SIZE, Tile::SIZE))));
+                target.draw(tile_rect);
             }
         }
     });

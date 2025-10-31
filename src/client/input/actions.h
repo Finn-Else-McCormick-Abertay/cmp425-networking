@@ -1,7 +1,7 @@
 #if !defined(INPUT__ACTIONS_H) || defined(__INPUT_ACTION_SYMBOL_DEFINITIONS__)
 #define INPUT__ACTIONS_H
 
-// All this palava is to allow this header to be used for both the extern declarations and the actual definition
+// All this palaver is to allow this header to be used for both the extern declarations and the actual definition
 #define INPUT_ACTION(Name, Type, ...) extern input_impl::InputAction<Type> Name
 #ifdef __INPUT_ACTION_SYMBOL_DEFINITIONS__
 #undef INPUT_ACTION

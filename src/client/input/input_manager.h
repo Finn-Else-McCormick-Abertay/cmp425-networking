@@ -34,7 +34,7 @@ public:
     
     static void setup_default_binds();
     
-    SINGLETON_REGISTRY(action, Action, std::string name, const std::type_info& value_type, input_impl::ActionDefinition&&);
+    SINGLETON_REGISTRY(Action, std::string name, const std::type_info& value_type, input_impl::ActionDefinition&&);
 
 private:
     struct ActionMeta {

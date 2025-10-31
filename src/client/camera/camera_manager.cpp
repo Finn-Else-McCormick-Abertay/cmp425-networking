@@ -6,13 +6,13 @@ using namespace std;
 
 SINGLETON_INST_DEF(CameraManager)
 
-void CameraManager::Registry::register_camera(Camera& camera) { inst()._cameras.insert(&camera); inst().on_camera_order_changed(); }
-void CameraManager::Registry::unregister_camera(Camera& camera) { inst()._cameras.erase(&camera); inst().on_camera_order_changed(); }
+void CameraManager::Registry::__register(Camera& camera) { inst()._cameras.insert(&camera); inst().on_camera_order_changed(); }
+void CameraManager::Registry::__unregister(Camera& camera) { inst()._cameras.erase(&camera); inst().on_camera_order_changed(); }
 
 void CameraManager::on_camera_order_changed() {
     auto active = get_active_camera();
-    if (!active) console::debug("No cameras exist.");
-    else console::debug("Camera switched to {}({})", active->identifier(), active->priority());
+    if (!active) console::warn("No cameras exist");
+    else console::debug("Switched to camera '{}'", active->identifier());
 }
 
 void CameraManager::update_aspect(const uvec2& size) { inst()._aspect = (float)size.y / size.x; }

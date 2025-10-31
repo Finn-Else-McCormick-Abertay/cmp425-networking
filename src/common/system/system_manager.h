@@ -7,7 +7,7 @@
 class SystemManager {
     SINGLETON_DECL(SystemManager);
 public:
-    SINGLETON_REGISTRY(system, ITickingSystem);
+    SINGLETON_REGISTRY(ITickingSystem);
 
     static void tick(float dt);
 

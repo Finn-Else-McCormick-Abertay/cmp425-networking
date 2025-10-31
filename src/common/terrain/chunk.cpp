@@ -7,6 +7,7 @@
 #include <util/console.h>
 
 using namespace std;
+using namespace tiles;
 
 Chunk::Chunk() : _tiles{} {}
 
@@ -64,7 +65,7 @@ void Chunk::set_chunk_neighbour(const ivec2& dir, Chunk* neighbour, bool recursi
 
 void Chunk::update_shape_of(const uvec2& pos) {
     Tile* tile = tile_at(pos);
-    if (tile->type() == Tile::Air) return;
+    if (!tile->type().meta().display) return;
 
     map<ivec2, bool> should_connect_in_dir;
     for (int i = -1; i <= 1; ++i) { for (int j = -1; j <= 1; ++j) {

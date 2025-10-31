@@ -178,7 +178,7 @@ void InputManager::unbind(ScanCode x, Action& action)           { inst()._bound_
 void InputManager::unbind(Controller::Button x, Action& action) { inst()._bound_controller_buttons[x].erase(&action); }
 void InputManager::unbind(Controller::Axis x, Action& action)   { inst()._bound_controller_axes[x].erase(&action); }
 
-void InputManager::Registry::register_action(Action& action, string name, const std::type_info& value_type, input_impl::ActionDefinition&& definition) {
+void InputManager::Registry::__register(Action& action, string name, const std::type_info& value_type, input_impl::ActionDefinition&& definition) {
     if (!inst()._initialised) {
         inst()._actions.insert(&action);
         inst()._action_meta.emplace(&action, InputManager::ActionMeta{ name, std::type_index(value_type), move(definition) } );
@@ -186,7 +186,7 @@ void InputManager::Registry::register_action(Action& action, string name, const 
     else console::error("register_action({}<{}>) called after input manager initialisation.", name, value_type.name());
 }
 
-void InputManager::Registry::unregister_action(Action& action) {
+void InputManager::Registry::__unregister(Action& action) {
     // Not handling linkages properly cause it should never actually happen, it's just here for consistency with the other singletons
     inst()._actions.erase(&action);
     inst()._action_meta.erase(&action);

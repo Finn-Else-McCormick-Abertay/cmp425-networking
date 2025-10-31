@@ -4,8 +4,8 @@
 
 using namespace std;
 
-Camera::Camera(string identifier, int priority) : _identifier(identifier), _priority(priority) { CameraManager::Registry::register_camera(*this); }
-Camera::~Camera() { CameraManager::Registry::unregister_camera(*this); }
+Camera::Camera(string identifier, int priority) : _identifier(identifier), _priority(priority) { CameraManager::Registry::__register(*this); }
+Camera::~Camera() { CameraManager::Registry::__unregister(*this); }
 
 const string& Camera::identifier() const { return _identifier; }
 int Camera::priority() const { return _priority; }

@@ -1,6 +1,7 @@
 
 set(COMMON_SOURCES
     terrain/tile.cpp
+    terrain/tile_type.cpp
     terrain/chunk.cpp
     terrain/world.cpp
 

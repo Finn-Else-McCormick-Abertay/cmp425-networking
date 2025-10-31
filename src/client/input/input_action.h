@@ -57,7 +57,7 @@ namespace input_impl {
     class InputAction : public IInputAction {
     public:
         InputAction(std::string name, ActionDefinition definition = {}) {
-            InputManager::Registry::register_action(*this, name, typeid(TValue), std::move(definition));
+            InputManager::Registry::__register(*this, name, typeid(TValue), std::move(definition));
         }
         TValue value() const { return _value; }
 

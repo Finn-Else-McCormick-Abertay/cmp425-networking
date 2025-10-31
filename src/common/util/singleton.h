@@ -5,9 +5,8 @@
 
 #define SINGLETON_INST_DEF(name) name& name::inst() { static std::unique_ptr<name> instance(new name); return *instance; }
 
-#define DECL_REGISTRY_FUNCS(name, type, ...)
-
-#define SINGLETON_REGISTRY(name, type, ...) class Registry { Registry() = delete; public:\
-    static void register_##name(type& __VA_OPT__(,) __VA_ARGS__);\
-    static void unregister_##name(type&);\
+// These only have the underscores because register is inexplicably a reserved word in C++ despite not doing anything
+#define SINGLETON_REGISTRY(type, ...) class Registry { Registry() = delete; public:\
+    static void __register(type& __VA_OPT__(,) __VA_ARGS__);\
+    static void __unregister(type&);\
 }

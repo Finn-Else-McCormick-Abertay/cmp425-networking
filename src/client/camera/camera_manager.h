@@ -7,7 +7,7 @@
 
 class CameraManager { SINGLETON_DECL(CameraManager);
 public:
-    SINGLETON_REGISTRY(camera, Camera);
+    SINGLETON_REGISTRY(Camera);
 
     static Camera* get_active_camera();
     static void update_aspect(const uvec2& window_size);
