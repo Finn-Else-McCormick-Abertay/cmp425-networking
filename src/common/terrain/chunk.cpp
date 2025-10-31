@@ -93,6 +93,18 @@ void Chunk::update_shape_of(const uvec2& pos) {
         else if (corner_rb) { shape = Tile::Shape::OPEN_LRB_CORNER_RB; }
         else { shape = Tile::Shape::OPEN_LRB; }
     }
+    else if (open_l && open_t && open_b) {
+        if (corner_lt && corner_lb) { shape = Tile::Shape::OPEN_LTB_CORNER_LT_LB; }
+        else if (corner_lt) { shape = Tile::Shape::OPEN_LTB_CORNER_LT; }
+        else if (corner_lb) { shape = Tile::Shape::OPEN_LTB_CORNER_LB; }
+        else { shape = Tile::Shape::OPEN_LTB; }
+    }
+    else if (open_r && open_t && open_b) {
+        if (corner_rt && corner_rb) { shape = Tile::Shape::OPEN_RTB_CORNER_RT_RB; }
+        else if (corner_rt) { shape = Tile::Shape::OPEN_RTB_CORNER_RT; }
+        else if (corner_rb) { shape = Tile::Shape::OPEN_RTB_CORNER_RB; }
+        else { shape = Tile::Shape::OPEN_RTB; }
+    }
     else if (open_l && open_t) {
         if (corner_lt) { shape = Tile::Shape::OPEN_LT_CORNER_LT; }
         else { shape = Tile::Shape::OPEN_LT; }

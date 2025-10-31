@@ -5,6 +5,8 @@
 #include <input/actions.h>
 #include <camera/camera_manager.h>
 
+#include <cmath>
+
 using namespace std;
 
 player::InteractionSystem::InteractionSystem(World* world) : _world(world) {}
@@ -13,17 +15,20 @@ void player::InteractionSystem::tick(float dt) {
     if (!_world) return;
     if (Camera* active_camera = CameraManager::get_active_camera()) {
         if (actions::place.down()) {
-            auto world_pos = CameraManager::pixel_to_world(actions::click.value());
-            auto world_tile_pos = world_pos / Tile::SIZE;
+            auto world_tile_pos = CameraManager::pixel_to_world(actions::click.value()) / Tile::SIZE;
+            auto chunk_pos = ivec2(floorf(world_tile_pos.x / Chunk::SIZE_TILES), floorf(world_tile_pos.y / Chunk::SIZE_TILES));
+            auto local_tile_pos = to_uvec(world_tile_pos - (chunk_pos * (float)Chunk::SIZE_TILES));
 
-            auto chunk_pos = to_ivec(world_tile_pos / Chunk::SIZE_TILES);
-            Chunk* chunk = _world->chunk_at(chunk_pos);
-            if (!chunk) chunk = _world->set_chunk(chunk_pos, make_optional<Chunk>());
-
-            auto local_tile_pos = to_ivec(world_tile_pos - to_fvec(chunk_pos));
+            Chunk* chunk = _world->get_or_make_chunk_at(chunk_pos);
             chunk->set_tile_at(local_tile_pos, Tile(Tile::Stone));
+        }
+        if (actions::destroy.down()) {
+            auto world_tile_pos = CameraManager::pixel_to_world(actions::destroy.value()) / Tile::SIZE;
+            auto chunk_pos = ivec2(floorf(world_tile_pos.x / Chunk::SIZE_TILES), floorf(world_tile_pos.y / Chunk::SIZE_TILES));
+            auto local_tile_pos = to_uvec(world_tile_pos - (chunk_pos * (float)Chunk::SIZE_TILES));
             
-            console::debug("Attempt place at {} / {} / {}.{}", actions::click.value(), world_tile_pos, chunk_pos, local_tile_pos);
+            Chunk* chunk = _world->get_or_make_chunk_at(chunk_pos);
+            chunk->set_tile_at(local_tile_pos, Tile(Tile::Air));
         }
     }
 }

@@ -8,9 +8,11 @@ class World {
 public:
     World();
 
-    Chunk* chunk_at(ivec2 chunk_coords);
-    const Chunk* chunk_at(ivec2 chunk_coords) const;
-    Chunk* set_chunk(ivec2 chunk_coords, const std::optional<Chunk>&, bool replace = true);
+    Chunk* chunk_at(const ivec2& chunk_coords);
+    const Chunk* chunk_at(const ivec2& chunk_coords) const;
+    Chunk* set_chunk(const ivec2& chunk_coords, std::optional<Chunk>&&, bool replace = true);
+
+    Chunk* get_or_make_chunk_at(const ivec2& chunk_coords);
 
 private:
     std::map<ivec2, Chunk> _chunk_map;

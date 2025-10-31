@@ -5,19 +5,23 @@ using namespace std;
 
 World::World() : _chunk_map() {}
 
-Chunk* World::chunk_at(ivec2 chunk_coords) { return _chunk_map.contains(chunk_coords) ? &(_chunk_map.at(chunk_coords)) : nullptr; }
-const Chunk* World::chunk_at(ivec2 chunk_coords) const { return _chunk_map.contains(chunk_coords) ? &(_chunk_map.at(chunk_coords)) : nullptr; }
+Chunk* World::chunk_at(const ivec2& chunk_coords) { return _chunk_map.contains(chunk_coords) ? &(_chunk_map.at(chunk_coords)) : nullptr; }
+const Chunk* World::chunk_at(const ivec2& chunk_coords) const { return _chunk_map.contains(chunk_coords) ? &(_chunk_map.at(chunk_coords)) : nullptr; }
 
-Chunk* World::set_chunk(ivec2 chunk_coords, const optional<Chunk>& chunk, bool replace) {
-    auto existing_chunk = chunk_at(chunk_coords); 
-    if (existing_chunk && !replace) return existing_chunk;
+Chunk* World::set_chunk(const ivec2& chunk_coords, optional<Chunk>&& chunk, bool replace) {
+    if (!replace && chunk_at(chunk_coords)) return chunk_at(chunk_coords);
     if (chunk) {
-        _chunk_map[chunk_coords] = chunk.value();
+        _chunk_map[chunk_coords] = move(chunk.value());
         _chunk_map[chunk_coords]._chunk_coords = chunk_coords;
-        return &_chunk_map.at(chunk_coords);
+        return chunk_at(chunk_coords);
     }
-    else if (existing_chunk) { _chunk_map.erase(chunk_coords); }
+    else if (auto existing_chunk = chunk_at(chunk_coords)) _chunk_map.erase(chunk_coords);
     return nullptr;
+}
+
+Chunk* World::get_or_make_chunk_at(const ivec2& chunk_coords) {
+    if (auto existing_chunk = chunk_at(chunk_coords)) return existing_chunk;
+    return set_chunk(chunk_coords, make_optional<Chunk>());
 }
 
 
