@@ -7,7 +7,7 @@
 
 class Chunk {
 public:
-    static constexpr uvec2 SIZE_TILES = { 16, 16 };
+    static constexpr uint SIZE_TILES = 16;
 
     Chunk();
     const ivec2& get_coords() const;
@@ -24,7 +24,7 @@ private:
     static size_t index_from_coords(const uvec2& pos);
     static uvec2 coords_from_index(size_t);
 
-    using tile_array_flat = std::array<Tile, SIZE_TILES.x * SIZE_TILES.y>;
+    using tile_array_flat = std::array<Tile, SIZE_TILES * SIZE_TILES>;
     tile_array_flat _tiles;
 
     void update_shape_of(const uvec2& pos);

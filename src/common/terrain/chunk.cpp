@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include <util/prelude.h>
+#include <util/console.h>
 
 using namespace std;
 
@@ -11,17 +12,17 @@ Chunk::Chunk() : _tiles{} {}
 
 const ivec2& Chunk::get_coords() const { return _chunk_coords; }
 
-bool Chunk::is_in_range(const uvec2& pos) { return pos.x < SIZE_TILES.x && pos.y < SIZE_TILES.y; }
-bool Chunk::is_in_range(size_t index) { return index < SIZE_TILES.x * SIZE_TILES.y; }
+bool Chunk::is_in_range(const uvec2& pos) { return pos.x < SIZE_TILES && pos.y < SIZE_TILES; }
+bool Chunk::is_in_range(size_t index) { return index < SIZE_TILES * SIZE_TILES; }
 
 size_t Chunk::index_from_coords(const uvec2& pos) {
     assert(is_in_range(pos));
-    return pos.y * SIZE_TILES.x + pos.x; 
+    return pos.y * SIZE_TILES + pos.x; 
 }
 
 uvec2 Chunk::coords_from_index(size_t index) {
     assert(is_in_range(index));
-    return uvec2( index % SIZE_TILES.x, index / SIZE_TILES.x );
+    return uvec2( index % SIZE_TILES, index / SIZE_TILES );
 }
 
 Tile* Chunk::tile_at(const uvec2& pos) { return is_in_range(pos) ? &_tiles.at(index_from_coords(pos)) : nullptr; }
@@ -33,7 +34,10 @@ bool Chunk::set_tile_at(const uvec2& pos, Tile tile) {
     // Update shapes
     for (int i = -1; i <= 1; ++i) { for (int j = -1; j <= 1; ++j) {
         ivec2 nbr_pos = ivec2(i, j) + pos;
-        if (nbr_pos.x < 0 || nbr_pos.y < 0 || nbr_pos.x >= SIZE_TILES.x || nbr_pos.y >= SIZE_TILES.y) { continue; }
+        if (nbr_pos.x < 0 || nbr_pos.y < 0 || nbr_pos.x >= SIZE_TILES || nbr_pos.y >= SIZE_TILES) {
+            console::warn("Attempted to update tile shape over chunk border.");
+            continue;
+        }
         update_shape_of(nbr_pos);
     }}
     return true;
@@ -47,7 +51,7 @@ void Chunk::update_shape_of(const uvec2& pos) {
         bool same_type = false; ivec2 nbr_dir = ivec2(i, j);
 
         ivec2 nbr_pos = nbr_dir + pos;
-        if (nbr_pos.x < 0 || nbr_pos.y < 0 || nbr_pos.x >= SIZE_TILES.x || nbr_pos.y >= SIZE_TILES.y) {
+        if (nbr_pos.x < 0 || nbr_pos.y < 0 || nbr_pos.x >= SIZE_TILES || nbr_pos.y >= SIZE_TILES) {
             same_type = false;
         }
         else { same_type = tile_at(nbr_pos)->type() == tile->type(); }

@@ -5,8 +5,7 @@
 #include <concepts>
 #include <functional>
 
-// Forward declarations
-class InputManager; namespace input_impl { class InputRegistry; }
+class InputManager;
 
 namespace actions { namespace mod {
     fvec2 constrain_length_to_norm(fvec2);
@@ -38,13 +37,15 @@ namespace input_impl {
     template<std::convertible_to<float> T> class value_helper<T, fvec2>          { public: static fvec2 cast(T v) { return fvec2(value_helper<T, float>::cast(v), 0); } };
     template<std::convertible_to<float> T> class value_helper<fvec2, T>          { public: static T cast(fvec2 v) { return v.x; } };
 
-    class I_InputAction {
+    class IInputAction {
     public:
         bool down() const;
         bool just_pressed() const;
         bool just_released() const;
+
+        operator bool() const;
     
-    protected:  I_InputAction() = default;
+    protected:  IInputAction() = default;
     private:
         friend class InputManager;
         bool _down, _was_down_last_frame;
@@ -53,10 +54,14 @@ namespace input_impl {
     };
     
     template<typename TValue>
-    class InputAction : public I_InputAction {
+    class InputAction : public IInputAction {
     public:
-        InputAction(std::string name, ActionDefinition definition = {}) { InputRegistry::register_action<TValue>(*this, name, std::move(definition)); }
+        InputAction(std::string name, ActionDefinition definition = {}) {
+            InputManager::Registry::register_action(*this, name, typeid(TValue), std::move(definition));
+        }
         TValue value() const { return _value; }
+
+        operator TValue() const { return _value; }
     
     private:
         friend class InputManager;

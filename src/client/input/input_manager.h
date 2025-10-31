@@ -7,6 +7,7 @@
 
 #include <util/console.h>
 #include <util/vec.h>
+#include <util/singleton.h>
 
 #include <input/input_action.h>
 #include <input/actions.h>
@@ -14,17 +15,13 @@
 #include <SFML/Window/Event.hpp>
 
 class InputManager {
-private:
-    InputManager() = default;
-    static InputManager& inst();
+    SINGLETON_DECL(InputManager);
     bool _initialised = false;
-    
-    using Action = input_impl::I_InputAction;
-    friend class input_impl::InputRegistry;
 
 public:
     static void init(); // Initialise the manager. Must be called exactly once, at the start of main.
 
+    using Action = input_impl::IInputAction;
     static void bind(Mouse::Axis, Action& action);        static void unbind(Mouse::Axis, Action& action);
     static void bind(Mouse::Button, Action& action);      static void unbind(Mouse::Button, Action& action);
     static void bind(Mouse::Wheel, Action& action);       static void unbind(Mouse::Wheel, Action& action);
@@ -36,6 +33,8 @@ public:
     static void bind(Controller::Axis, Action& action);   static void unbind(Controller::Axis, Action& action);
     
     static void setup_default_binds();
+    
+    SINGLETON_REGISTRY(action, Action, std::string name, const std::type_info& value_type, input_impl::ActionDefinition&&);
 
 private:
     struct ActionMeta {
@@ -78,25 +77,3 @@ private:
 
     static constexpr float JOYSTICK_DEADZONE = 0.1f;
 };
-
-
-namespace input_impl {    
-    // Static class for handling types which auto-register with the input manager.
-    // Its methods should only be called before the InputManager is initialised (at the start of main).
-    class InputRegistry {
-    public:
-        InputRegistry() = delete;
-
-        template<typename TValue>
-        static void register_action(input_impl::I_InputAction& action, std::string name, input_impl::ActionDefinition&& definition) {
-            auto& manager_inst = InputManager::inst();
-            if (!manager_inst._initialised) {
-                manager_inst._actions.insert(&action);
-                manager_inst._action_meta.emplace(&action,
-                    InputManager::ActionMeta{ name, std::type_index(typeid(TValue)), std::move(definition) }
-                );
-            }
-            else console::error("register_action({}<{}>) called after manager initialisation.", name, typeid(TValue).name());
-        }
-    };   
-}

@@ -7,6 +7,7 @@
 #include <SFML/Graphics.hpp>
 #include <terrain/world.h>
 #include <player/interaction_system.h>
+#include <camera/camera.h>
 
 #include <map>
 #include <iostream>
@@ -22,7 +23,9 @@ int main() {
     InputManager::setup_default_binds();
     
     auto world = World();
-    auto interaction_system = player::InteractionSystem();
+
+    auto player_camera = Camera("player");
+    auto interaction_system = player::InteractionSystem(&world);
 
     auto chunk = make_optional<Chunk>();
     chunk->set_tile_at({0, 1}, Tile(Tile::Stone));
@@ -44,18 +47,10 @@ int main() {
         console::debug("Window: Close Requested");
         return true;
     });
-    window.set_on_resized_callback([](Window& window, uvec2 new_size) {
-        console::debug("Window: Resized to {}", new_size);
-    });
     window.set_draw_callback([&](sf::RenderTarget& target) {
-        float viewHeightLogical = 300;
-        float windowAspect = (float)target.getSize().y / target.getSize().x;
-
-        target.setView(sf::View({0.f, 0.f}, {viewHeightLogical / windowAspect, viewHeightLogical}));
-
         auto chunk_true_size = Chunk::SIZE_TILES * Tile::SIZE;
 
-        auto chunk_debug_rect = sf::RectangleShape(to_sfvec_of<float>(chunk_true_size));
+        auto chunk_debug_rect = sf::RectangleShape(sf_fvec2(chunk_true_size, chunk_true_size));
         chunk_debug_rect.setOutlineColor(sf::Color(255, 255, 255, 100));
         chunk_debug_rect.setOutlineThickness(0.5);
         chunk_debug_rect.setFillColor(sf::Color::Transparent);
@@ -72,7 +67,7 @@ int main() {
         tile_rects.at(Tile::Stone).setTexture(&tileset);
 
         for (auto& chunk : world) {
-            ivec2 chunk_true_coords(chunk.get_coords().x * chunk_true_size.x, chunk.get_coords().y * chunk_true_size.y);
+            ivec2 chunk_true_coords(chunk.get_coords().x * chunk_true_size, chunk.get_coords().y * chunk_true_size);
 
             for (auto [local_pos, tile] : chunk) {
                 if (tile->type() == Tile::Air) continue;

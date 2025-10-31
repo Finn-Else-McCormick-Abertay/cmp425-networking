@@ -1,14 +1,10 @@
 #include "input_manager.h"
-#include <memory>
 #include <util/vec.h>
 #include <util/vec_convert.h>
 
 using namespace std;
 
-InputManager& InputManager::inst() {
-    static unique_ptr<InputManager> instance(new InputManager);
-    return *instance;
-}
+SINGLETON_INST_DEF(InputManager)
 
 const string& InputManager::get_name(Action* action) { return inst()._action_meta.at(action).name; }
 const input_impl::ActionDefinition& InputManager::get_definition(Action* action) { return inst()._action_meta.at(action).definition; }
@@ -181,3 +177,17 @@ void InputManager::unbind(Key x, Action& action)                { inst()._bound_
 void InputManager::unbind(ScanCode x, Action& action)           { inst()._bound_scan_codes[x].erase(&action); }
 void InputManager::unbind(Controller::Button x, Action& action) { inst()._bound_controller_buttons[x].erase(&action); }
 void InputManager::unbind(Controller::Axis x, Action& action)   { inst()._bound_controller_axes[x].erase(&action); }
+
+void InputManager::Registry::register_action(Action& action, string name, const std::type_info& value_type, input_impl::ActionDefinition&& definition) {
+    if (!inst()._initialised) {
+        inst()._actions.insert(&action);
+        inst()._action_meta.emplace(&action, InputManager::ActionMeta{ name, std::type_index(value_type), move(definition) } );
+    }
+    else console::error("register_action({}<{}>) called after input manager initialisation.", name, value_type.name());
+}
+
+void InputManager::Registry::unregister_action(Action& action) {
+    // Not handling linkages properly cause it should never actually happen, it's just here for consistency with the other singletons
+    inst()._actions.erase(&action);
+    inst()._action_meta.erase(&action);
+}

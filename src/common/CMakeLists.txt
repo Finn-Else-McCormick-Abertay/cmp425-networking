@@ -5,6 +5,7 @@ set(COMMON_SOURCES
     terrain/world.cpp
 
     system/system_manager.cpp
+    system/system.cpp
 
     util/console/ansi.cpp
 )

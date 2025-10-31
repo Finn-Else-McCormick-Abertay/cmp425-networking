@@ -40,8 +40,8 @@ template<typename T_Output, typename T_Input, size_t Size> vec<T_Output, Size> t
 
 #define DEF_TO_VEC_ALIAS(prefix, type)\
     template<typename T_Input> vec<type, 2> to_##prefix##vec(const sf::Vector2<T_Input>& vec) { return to_vec_of<type>(vec); }\
-    template<typename T_Input> vec<type, 3> to_fvec(const sf::Vector3<T_Input>& vec) { return to_vec_of<type>(vec); }\
-    template<typename T_Input, size_t Size> vec<type, Size> to_fvec(const vec<T_Input, Size>& vec) { return to_vec_of<type>(vec); }
+    template<typename T_Input> vec<type, 3> to_##prefix##vec(const sf::Vector3<T_Input>& vec) { return to_vec_of<type>(vec); }\
+    template<typename T_Input, size_t Size> vec<type, Size> to_##prefix##vec(const vec<T_Input, Size>& vec) { return to_vec_of<type>(vec); }
 
 DEF_TO_VEC_ALIAS(f, float)
 DEF_TO_VEC_ALIAS(i, int)
