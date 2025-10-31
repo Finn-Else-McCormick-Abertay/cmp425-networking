@@ -35,12 +35,31 @@ bool Chunk::set_tile_at(const uvec2& pos, Tile tile) {
     for (int i = -1; i <= 1; ++i) { for (int j = -1; j <= 1; ++j) {
         ivec2 nbr_pos = ivec2(i, j) + pos;
         if (nbr_pos.x < 0 || nbr_pos.y < 0 || nbr_pos.x >= SIZE_TILES || nbr_pos.y >= SIZE_TILES) {
-            console::warn("Attempted to update tile shape over chunk border.");
-            continue;
+            if (auto neighbour_chunk = get_chunk_neighbour(ivec2(
+                nbr_pos.x < 0 ? -1 : nbr_pos.x >= SIZE_TILES ? 1 : 0,
+                nbr_pos.y < 0 ? -1 : nbr_pos.y >= SIZE_TILES ? 1 : 0
+            ))) {
+                ivec2 other_chunk_nbr_pos = ivec2(
+                    nbr_pos.x < 0 ? nbr_pos.x + SIZE_TILES : nbr_pos.x >= SIZE_TILES ? nbr_pos.x - SIZE_TILES : nbr_pos.x,
+                    nbr_pos.y < 0 ? nbr_pos.y + SIZE_TILES : nbr_pos.y >= SIZE_TILES ? nbr_pos.y - SIZE_TILES : nbr_pos.y
+                );
+                neighbour_chunk->update_shape_of(other_chunk_nbr_pos);
+            }
         }
-        update_shape_of(nbr_pos);
+        else update_shape_of(nbr_pos);
     }}
     return true;
+}
+
+Chunk* Chunk::get_chunk_neighbour(const ivec2& dir) {
+    assert(abs(dir.x) <= 1 && abs(dir.y) <= 1 && !(dir.x == 0 && dir.y == 0));
+    return _neighbours.contains(dir) ? _neighbours.at(dir) : nullptr;
+}
+
+void Chunk::set_chunk_neighbour(const ivec2& dir, Chunk* neighbour, bool recursive) {
+    assert(abs(dir.x) <= 1 && abs(dir.y) <= 1 && !(dir.x == 0 && dir.y == 0));
+    _neighbours[dir] = neighbour;
+    if (neighbour && recursive) neighbour->set_chunk_neighbour(-dir, this, false);
 }
 
 void Chunk::update_shape_of(const uvec2& pos) {
@@ -48,11 +67,22 @@ void Chunk::update_shape_of(const uvec2& pos) {
     map<ivec2, bool> same_type_in_dir;
     for (int i = -1; i <= 1; ++i) { for (int j = -1; j <= 1; ++j) {
         if (i == 0 && j == 0) continue;
-        bool same_type = false; ivec2 nbr_dir = ivec2(i, j);
+        bool same_type = false;
 
+        ivec2 nbr_dir = ivec2(i, j);
         ivec2 nbr_pos = nbr_dir + pos;
         if (nbr_pos.x < 0 || nbr_pos.y < 0 || nbr_pos.x >= SIZE_TILES || nbr_pos.y >= SIZE_TILES) {
-            same_type = false;
+            if (auto neighbour_chunk = get_chunk_neighbour(ivec2(
+                nbr_pos.x < 0 ? -1 : nbr_pos.x >= SIZE_TILES ? 1 : 0,
+                nbr_pos.y < 0 ? -1 : nbr_pos.y >= SIZE_TILES ? 1 : 0
+            ))) {
+                ivec2 other_chunk_nbr_pos = ivec2(
+                    nbr_pos.x < 0 ? nbr_pos.x + SIZE_TILES : nbr_pos.x >= SIZE_TILES ? nbr_pos.x - SIZE_TILES : nbr_pos.x,
+                    nbr_pos.y < 0 ? nbr_pos.y + SIZE_TILES : nbr_pos.y >= SIZE_TILES ? nbr_pos.y - SIZE_TILES : nbr_pos.y
+                );
+                same_type = neighbour_chunk->tile_at(other_chunk_nbr_pos)->type() == tile->type();
+            }
+            else same_type = false;
         }
         else { same_type = tile_at(nbr_pos)->type() == tile->type(); }
 

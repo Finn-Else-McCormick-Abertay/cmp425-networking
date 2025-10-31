@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <map>
 #include <functional>
 #include <util/vec.h>
 #include <terrain/tile.h>
@@ -17,7 +18,10 @@ public:
     bool set_tile_at(const uvec2& pos, Tile);
 
 private:
-    ivec2 _chunk_coords; friend class World; // Set by the containing world
+    friend class World;
+    ivec2 _chunk_coords; std::map<ivec2, Chunk*> _neighbours; // Set by containing world
+    Chunk* get_chunk_neighbour(const ivec2&);
+    void set_chunk_neighbour(const ivec2&, Chunk*, bool recursive = true);
 
     static bool is_in_range(const uvec2& pos);
     static bool is_in_range(size_t);

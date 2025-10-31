@@ -13,9 +13,21 @@ Chunk* World::set_chunk(const ivec2& chunk_coords, optional<Chunk>&& chunk, bool
     if (chunk) {
         _chunk_map[chunk_coords] = move(chunk.value());
         _chunk_map[chunk_coords]._chunk_coords = chunk_coords;
-        return chunk_at(chunk_coords);
+        auto this_chunk = chunk_at(chunk_coords);
+
+        for (int i = -1; i <= 1; ++i) { for (int j = -1; j <= 1; ++j) {
+            if (i == 0 && j == 0) continue;
+            this_chunk->set_chunk_neighbour(ivec2(i, j), chunk_at(chunk_coords + ivec2(i, j)));
+        }}
+        return this_chunk;
     }
-    else if (auto existing_chunk = chunk_at(chunk_coords)) _chunk_map.erase(chunk_coords);
+    else if (auto existing_chunk = chunk_at(chunk_coords)) {
+        for (int i = -1; i <= 1; ++i) { for (int j = -1; j <= 1; ++j) {
+            if (i == 0 && j == 0) continue;
+            existing_chunk->set_chunk_neighbour(ivec2(i, j), nullptr);
+        }}
+        _chunk_map.erase(chunk_coords);
+    }
     return nullptr;
 }
 

@@ -27,12 +27,6 @@ int main() {
     auto player_camera = Camera("player");
     auto interaction_system = player::InteractionSystem(&world);
 
-    auto chunk = world.get_or_make_chunk_at({0,0});
-    chunk->set_tile_at({0, 1}, Tile(Tile::Stone));
-    chunk->set_tile_at({1, 1}, Tile(Tile::Stone));
-    chunk->set_tile_at({2, 1}, Tile(Tile::Stone));
-    chunk->set_tile_at({1, 2}, Tile(Tile::Stone));
-
     Window window;
 
     sf::Texture placeholder_texture = sf::Texture("resources/assets/textures/placeholder.png");
@@ -48,9 +42,9 @@ int main() {
     window.set_draw_callback([&](sf::RenderTarget& target) {
         auto chunk_true_size = Chunk::SIZE_TILES * Tile::SIZE;
 
-        auto chunk_debug_rect = sf::RectangleShape(sf_fvec2(chunk_true_size, chunk_true_size));
+        auto chunk_debug_rect = sf::RectangleShape(sf_fvec2(chunk_true_size - 2, chunk_true_size - 2));
         chunk_debug_rect.setOutlineColor(sf::Color(255, 255, 255, 100));
-        chunk_debug_rect.setOutlineThickness(0.5);
+        chunk_debug_rect.setOutlineThickness(1);
         chunk_debug_rect.setFillColor(sf::Color::Transparent);
 
         auto make_tile_rect = [](sf::Color fill, sf::Color outline = sf::Color::Transparent) -> sf::RectangleShape {
@@ -66,7 +60,12 @@ int main() {
 
         for (auto& chunk : world) {
             ivec2 chunk_true_coords(chunk.get_coords() * chunk_true_size);
+            
+            // Draw debug rect
+            chunk_debug_rect.setPosition(to_sfvec_of<float>(chunk_true_coords + ivec2(1, 1)));
+            target.draw(chunk_debug_rect);
 
+            // Draw tiles
             for (auto [local_pos, tile] : chunk) {
                 if (tile->type() == Tile::Air) continue;
                 auto& rect = tile_rects.at(tile->type());
@@ -77,10 +76,6 @@ int main() {
                 rect.setTextureRect(sf::IntRect(to_sfvec_of<int>(texture_tile_index * Tile::SIZE), to_sfvec(ivec2(Tile::SIZE, Tile::SIZE))));
                 target.draw(rect);
             }
-
-            // Draw debug rect
-            chunk_debug_rect.setPosition(to_sfvec_of<float>(chunk_true_coords));
-            target.draw(chunk_debug_rect);
         }
     });
 
