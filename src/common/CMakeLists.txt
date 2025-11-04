@@ -6,6 +6,7 @@ set(COMMON_SOURCES
     terrain/world.cpp
 
     data/data_manager.cpp
+    data/namespaced_id.cpp
 
     system/system_manager.cpp
     system/system.cpp

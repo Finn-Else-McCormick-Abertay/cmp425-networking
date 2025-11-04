@@ -10,4 +10,6 @@ target_sources(${CLIENT_NAME} PRIVATE
 
     camera/camera.cpp
     camera/camera_manager.cpp
+
+    assets/asset_manager.cpp
 )

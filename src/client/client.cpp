@@ -25,8 +25,13 @@
 
 #include <map>
 //#include <locale>
+#include <data/data_manager.h>
+#include <data/namespaced_id.h>
+
+#include <assets/asset_manager.h>
 
 using namespace std;
+using namespace literal;
 
 int main() {
     //std::locale::global(std::locale(""));
@@ -34,6 +39,10 @@ int main() {
 
     InputManager::init();
     InputManager::setup_default_binds();
+
+    data::Manager::reload();
+
+    print<info>("{}: {}", "default::air"_id, (int)data::Manager::get_tile("default::air"_id));
     
     auto world = World();
 

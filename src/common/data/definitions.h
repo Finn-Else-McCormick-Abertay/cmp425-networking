@@ -3,6 +3,7 @@
 #include <util/glaze_prelude.h>
 #include <util/helper/format.h>
 #include <fmt/std.h>
+#include <unordered_map>
 
 namespace data {
     enum class DefaultModel{ none, block };

@@ -6,6 +6,10 @@
 
 #define DECL_SINGLETON(name, ...) \
     __VA_OPT__(private:) name() = default; __VA_ARGS__##__VA_OPT__(: )static name& inst()
+
+#define DECL_SINGLETON_WITH_CONSTRUCTOR(name, ...) \
+    __VA_OPT__(private:) name(); __VA_ARGS__##__VA_OPT__(: )static name& inst()
+
 #define DEFINE_SINGLETON(name) \
     name& name::inst() { static std::unique_ptr<name> instance(new name); return *instance; } static_assert(true, "")
 
