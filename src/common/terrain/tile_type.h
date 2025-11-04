@@ -1,7 +1,7 @@
 #pragma once
 
 #include <util/primitive_aliases.h>
-#include <util/singleton.h>
+#include <util/helper/singleton.h>
 #include <string>
 #include <set>
 #include <map>
@@ -33,7 +33,6 @@ public:
     bool has_tag(const std::string&) const;
 
     bool operator==(const TileType&) const;
-    //operator Tile() const;
 
 private:
     friend class TileTypeManager;
@@ -45,9 +44,9 @@ private:
     #endif
 };
 
-class TileTypeManager { SINGLETON_DECL(TileTypeManager);
+class TileTypeManager { DECL_SINGLETON(TileTypeManager);
 public:
-    SINGLETON_REGISTRY(TileType);
+    DECL_REGISTRY(TileType);
 
 private:
     std::set<TileType*> _tiles;

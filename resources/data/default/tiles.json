@@ -1,0 +1,11 @@
+{
+    "tiles": {
+        "air": {
+            "model": "none",
+            "collision": "none"
+        },
+        "stone": {
+            
+        }
+    }
+}

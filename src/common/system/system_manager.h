@@ -2,12 +2,11 @@
 
 #include <system/system.h>
 #include <set>
-#include <util/singleton.h>
+#include <util/helper/singleton.h>
 
-class SystemManager {
-    SINGLETON_DECL(SystemManager);
+class SystemManager { DECL_SINGLETON(SystemManager);
 public:
-    SINGLETON_REGISTRY(ITickingSystem);
+    DECL_REGISTRY(ITickingSystem);
 
     static void tick(float dt);
 

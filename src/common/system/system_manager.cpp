@@ -2,7 +2,7 @@
 
 using namespace std;
 
-SINGLETON_INST_DEF(SystemManager)
+DEFINE_SINGLETON(SystemManager);
 
 void SystemManager::tick(float dt) { for (auto system : inst()._ticking) system->tick(dt); }
 

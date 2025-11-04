@@ -1,13 +1,13 @@
 #pragma once
 
-#include <util/singleton.h>
+#include <util/helper/singleton.h>
 #include <camera/camera.h>
 #include <set>
 #include <SFML/Graphics/RenderTarget.hpp>
 
-class CameraManager { SINGLETON_DECL(CameraManager);
+class CameraManager { DECL_SINGLETON(CameraManager);
 public:
-    SINGLETON_REGISTRY(Camera);
+    DECL_REGISTRY(Camera);
 
     static Camera* get_active_camera();
     static void update_aspect(const uvec2& window_size);

@@ -7,21 +7,21 @@
 
 #include <util/console.h>
 #include <util/vec.h>
-#include <util/singleton.h>
+#include <util/helper/singleton.h>
 
 #include <input/input_action.h>
 #include <input/actions.h>
 #include <input/input_aliases.h>
 #include <SFML/Window/Event.hpp>
 
-class InputManager {
-    SINGLETON_DECL(InputManager);
+class InputManager { DECL_SINGLETON(InputManager);
     bool _initialised = false;
+    using Action = input_impl::IInputAction;
 
 public:
+    DECL_REGISTRY_WITH_ARGS(Action, std::string name, const std::type_info& value_type, input_impl::ActionDefinition&&);
     static void init(); // Initialise the manager. Must be called exactly once, at the start of main.
 
-    using Action = input_impl::IInputAction;
     static void bind(Mouse::Axis, Action& action);        static void unbind(Mouse::Axis, Action& action);
     static void bind(Mouse::Button, Action& action);      static void unbind(Mouse::Button, Action& action);
     static void bind(Mouse::Wheel, Action& action);       static void unbind(Mouse::Wheel, Action& action);
@@ -33,8 +33,7 @@ public:
     static void bind(Controller::Axis, Action& action);   static void unbind(Controller::Axis, Action& action);
     
     static void setup_default_binds();
-    
-    SINGLETON_REGISTRY(Action, std::string name, const std::type_info& value_type, input_impl::ActionDefinition&&);
+
 
 private:
     struct ActionMeta {

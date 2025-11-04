@@ -18,10 +18,20 @@
 #define __TILE_SYMBOL_DEFINITIONS__
 #include <terrain/tiles.h>
 
+#include <data/definitions.h>
+#include <glaze/json.hpp>
+
+#include <util/helper/enum_serialization.h>
+
+#include <map>
+//#include <locale>
+
 using namespace std;
 
 int main() {
-    console::info("Client init");
+    //std::locale::global(std::locale(""));
+    //print<info>("Locale: {}", std::locale("").name());
+
     InputManager::init();
     InputManager::setup_default_binds();
     
@@ -33,7 +43,7 @@ int main() {
     Window window;
 
     window.set_close_request_callback([](Window& window) -> bool {
-        console::debug("Window: Close Requested");
+        print<debug>("Window: Close Requested");
         return true;
     });
     window.set_draw_callback([&](sf::RenderTarget& target) {

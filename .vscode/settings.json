@@ -98,7 +98,20 @@
         "cassert": "cpp",
         "stdfloat": "cpp",
         "typeindex": "cpp",
-        "*.rh": "cpp"
+        "*.rh": "cpp",
+        "any": "cpp",
+        "future": "cpp",
+        "cinttypes": "cpp",
+        "condition_variable": "cpp",
+        "expected": "cpp",
+        "numeric": "cpp",
+        "shared_mutex": "cpp",
+        "source_location": "cpp",
+        "cfenv": "cpp",
+        "complex": "cpp",
+        "cstdarg": "cpp",
+        "numbers": "cpp",
+        "stack": "cpp"
     },
     "C_Cpp.vcpkg.enabled": false,
 }

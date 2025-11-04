@@ -1,26 +1,76 @@
 #pragma once
 
-#include <format>
-#include <iostream>
-#include <util/console/ansi.h>
+#include <fmt/base.h>
+#include <fmt/format.h>
+#include <fmt/std.h>
+#include <fmt/ranges.h>
+#include <fmt/color.h>
 
-namespace console {
+#include <concepts>
+#include <typeinfo>
+#include <string>
+#include <optional>
 
-    #define __DEF_CONSOLE_OUTPUT_FUNC(name, prefix) \
-    template<class... Args> void name(std::format_string<Args...> fmt, Args&&... args) { \
-        std::cout << prefix << std::vformat(fmt.get(), std::make_format_args(args...)) << '\n' << ANSI::Reset; \
+namespace console_impl {
+    static constexpr auto DATE_COLOUR = fmt::color::turquoise;
+    static constexpr auto UNKNOWN_COLOUR = fmt::color::red;
+
+    template<typename T> concept has_name = requires(T) { { T::NAME } -> std::convertible_to<std::string>; };
+    template<typename T> concept has_text_colour = requires(T) { { T::TEXT_COLOUR } -> std::convertible_to<fmt::detail::color_type>; };
+    template<typename T> concept has_title_colour = requires(T) { { T::TITLE_COLOUR } -> std::convertible_to<fmt::detail::color_type>; };
+    template<typename T> concept has_separator_colour = requires(T) { { T::SEPARATOR_COLOUR } -> std::convertible_to<fmt::detail::color_type>; };
+
+    void print(
+        const fmt::text_style& style_text, const fmt::text_style& style_title, const fmt::text_style& style_separator,
+        const std::string& type_name, const std::string& owner_name, fmt::string_view fmt, fmt::format_args args
+    );
+
+    constexpr std::string clean_type_name(const char* type_name) {
+        std::string working(type_name);
+        if      (working.starts_with("class "))  working = working.substr(6);
+        else if (working.starts_with("struct ")) working = working.substr(7);
+        return working;
     }
-    #define __DEF_CONSOLE_OUTPUT_FUNC_EMPTY(name) \
-    template<class... Args> void name(std::format_string<Args...> fmt, Args&&... args) {}
-
-    __DEF_CONSOLE_OUTPUT_FUNC(info,  ANSI::Colour::FG::White    << "[INFO] ")
-    __DEF_CONSOLE_OUTPUT_FUNC(warn,  ANSI::Colour::FG::Yellow   << "[WARN] ")
-    __DEF_CONSOLE_OUTPUT_FUNC(error, ANSI::Colour::FG::Red      << "[ERROR] ")
-
-    #ifdef DEBUG
-    __DEF_CONSOLE_OUTPUT_FUNC(debug, ANSI::Colour::FG::Purple   << "[DEBUG] ")
-    #endif
-    #ifndef DEBUG
-    __DEF_CONSOLE_OUTPUT_FUNC_EMPTY(debug)
-    #endif
 }
+
+template<typename Ctx, typename Owner, typename... Args> void print(fmt::format_string<Args...> fmt, Args&&... args) {
+    std::string ctx_name;
+    if constexpr(console_impl::has_name<Ctx>) ctx_name = Ctx::NAME;
+    else ctx_name = console_impl::clean_type_name(typeid(Ctx).name());
+    
+    std::string owner_name;
+    if constexpr(!std::same_as<Owner, void>) owner_name = console_impl::clean_type_name(typeid(Owner).name());
+
+    fmt::detail::color_type text_colour = console_impl::UNKNOWN_COLOUR;
+    if constexpr (console_impl::has_text_colour<Ctx>) text_colour = Ctx::TEXT_COLOUR;
+    fmt::detail::color_type title_colour = text_colour;
+    if constexpr (console_impl::has_title_colour<Ctx>) title_colour = Ctx::TITLE_COLOUR;
+    fmt::detail::color_type separator_colour = title_colour;
+    if constexpr (console_impl::has_separator_colour<Ctx>) separator_colour = Ctx::SEPARATOR_COLOUR;
+
+    console_impl::print(
+        fmt::fg(text_colour), fmt::fg(title_colour), fmt::fg(separator_colour),
+        ctx_name, owner_name, fmt, fmt::make_format_args(args...)
+    );
+}
+
+template<typename Ctx, typename... Args> void print(fmt::format_string<Args...> fmt, Args&&... args) { print<Ctx, void>(std::move(fmt), std::forward<Args>(args)...); }
+template<typename Ctx, typename Owner, typename Arg> void print(Arg val) { print<Ctx, Owner>("{}", val); }
+template<typename Ctx, typename Arg> void print(Arg val) { print<Ctx, void>("{}", val); }
+
+// Print Contexts
+
+struct info {
+    static constexpr auto TEXT_COLOUR = fmt::color::white;
+    static constexpr auto TITLE_COLOUR = fmt::rgb(255, 220, 255);
+};
+struct debug {
+    static constexpr auto TEXT_COLOUR = fmt::color::violet;
+    static constexpr auto TITLE_COLOUR = fmt::rgb(236, 149, 236);
+};
+
+struct success { static constexpr auto TEXT_COLOUR = fmt::color::lawn_green; };
+struct failure { static constexpr auto TEXT_COLOUR = fmt::color::tomato; };
+
+struct warning { static constexpr auto TEXT_COLOUR = fmt::rgb(255, 225, 58); };
+struct error { static constexpr auto TEXT_COLOUR = fmt::color::tomato; };

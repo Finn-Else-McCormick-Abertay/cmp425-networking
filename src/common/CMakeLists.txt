@@ -5,10 +5,12 @@ set(COMMON_SOURCES
     terrain/chunk.cpp
     terrain/world.cpp
 
+    data/data_manager.cpp
+
     system/system_manager.cpp
     system/system.cpp
 
-    util/console/ansi.cpp
+    util/console.cpp
 )
 
 target_sources(${CLIENT_NAME} PRIVATE ${COMMON_SOURCES})

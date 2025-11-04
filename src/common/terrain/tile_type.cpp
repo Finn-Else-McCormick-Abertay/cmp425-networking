@@ -1,6 +1,8 @@
 #include "tile_type.h"
 #include <terrain/tile.h>
 
+#include <util/console.h>
+
 TileType::TileType(std::string name, Meta meta) : _name(name), _meta(meta) { TileTypeManager::Registry::__register(*this); }
 
 const std::string& TileType::name() const { return _name; }
@@ -15,13 +17,12 @@ bool TileType::has_tag(const std::string& tag) const { return _meta.tags.contain
 
 bool TileType::operator==(const TileType& rhs) const { return _id == rhs._id; }
 
-//TileType::operator Tile() const { return Tile(*this); }
-
-SINGLETON_INST_DEF(TileTypeManager)
+DEFINE_SINGLETON(TileTypeManager);
 
 void TileTypeManager::Registry::__register(TileType& type) {
     type._id = inst()._tiles.size();
     inst()._tiles.insert(&type);
+    print<info>("Registered tile '{}' as id {}.", type.name(), type.id());
 
     for (auto& tag : type.meta().tags) { inst()._tags[tag].insert(&type); }
 

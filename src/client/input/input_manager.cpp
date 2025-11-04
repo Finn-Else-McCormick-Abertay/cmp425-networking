@@ -4,7 +4,7 @@
 
 using namespace std;
 
-SINGLETON_INST_DEF(InputManager)
+DEFINE_SINGLETON(InputManager);
 
 const string& InputManager::get_name(Action* action) { return inst()._action_meta.at(action).name; }
 const input_impl::ActionDefinition& InputManager::get_definition(Action* action) { return inst()._action_meta.at(action).definition; }
@@ -16,14 +16,14 @@ InputManager::Action* InputManager::get_action_by_name(const string& name) {
 }
 
 void InputManager::init() {
-    if (inst()._initialised) { console::error("Attempted to initialise InputManager a second time"); return; }
+    if (inst()._initialised) return print<error, InputManager>("Attempted to initialise InputManager a second time");
     inst()._initialised = true;
 
     for (auto& [action, meta] : inst()._action_meta) {
         if (!meta.definition.value_mirrors.empty()) {
             auto dependency = get_action_by_name(meta.definition.value_mirrors); 
             if (dependency) inst()._action_meta.at(dependency).simple_dependents.insert(action);
-            else console::error("{} attempted to depend on non-existent action '{}'.", meta.name, meta.definition.value_mirrors);
+            else print<error, InputManager>("{} attempted to depend on non-existent action '{}'.", meta.name, meta.definition.value_mirrors);
         }
         if (!meta.definition.value_sums.empty()) {
             std::map<Action*, input_impl::ActionModifier> map;
@@ -33,17 +33,18 @@ void InputManager::init() {
                     inst()._action_meta.at(dependency).complex_dependents.insert(action);
                     map[dependency] = comp.modifier;
                 }
-                else console::error("{} attempted to depend on non-existent action '{}'.", meta.name, comp.name);
+                else print<error, InputManager>("{} attempted to depend on non-existent action '{}'.", meta.name, comp.name);
             }
             inst()._complex_dependencies.emplace(action, std::move(map));
         }
     }
 
-    console::info("InputManager initialised.");
+    print<success, InputManager>("Initialised.");
 }
 
 void InputManager::recalculate_complex_action(Action* action) {
-    if (!_complex_dependencies.contains(action)) { console::error("Attempted to recalculate non-complex action '{}'", get_name(action)); return; }
+    if (!_complex_dependencies.contains(action))
+        return print<error, InputManager>("Attempted to recalculate non-complex action '{}'", get_name(action));
 
     fvec2 accumulated;
     for (auto& [dependency_action, modifier] : _complex_dependencies.at(action)) {
@@ -149,11 +150,11 @@ void InputManager::receive_event(const sf::Event& event) {
     else if (bool connected = event.is<sf::Event::JoystickConnected>(); connected || event.is<sf::Event::JoystickDisconnected>()) {
         auto connection_event = connected ? event.getIf<sf::Event::JoystickConnected>() : (sf::Event::JoystickConnected*)event.getIf<sf::Event::JoystickDisconnected>();
 
-        if (connected) console::debug("Controller '{}' connected as Controller #{}",
+        if (connected) print<debug>("Controller '{}' connected as Controller #{}",
             sf::Joystick::getIdentification(connection_event->joystickId).name.toAnsiString(),
             connection_event->joystickId
         );
-        else console::debug("Controller #{} disconnected", connection_event->joystickId);
+        else print<debug>("Controller #{} disconnected", connection_event->joystickId);
     }
 }
 
@@ -183,7 +184,7 @@ void InputManager::Registry::__register(Action& action, string name, const std::
         inst()._actions.insert(&action);
         inst()._action_meta.emplace(&action, InputManager::ActionMeta{ name, std::type_index(value_type), move(definition) } );
     }
-    else console::error("register_action({}<{}>) called after input manager initialisation.", name, value_type.name());
+    else print<error, InputManager::Registry>("register_action({}<{}>) called after manager initialisation.", name, value_type.name());
 }
 
 void InputManager::Registry::__unregister(Action& action) {
