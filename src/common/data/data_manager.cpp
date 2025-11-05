@@ -8,16 +8,33 @@
 #include <util/glaze_prelude.h>
 #include <glaze/json.hpp>
 
+#ifdef CLIENT
+#include <assets/asset_manager.h>
+#endif
+
 using namespace std;
 
 DEFINE_SINGLETON(data::Manager);
 
 void data::Manager::reload() {
+    inst()._namespaces.clear();
+
     auto data_root = filesystem::relative("resources/data");
     for (auto& entry : filesystem::directory_iterator(data_root)) {
         if (entry.is_directory()) load_namespace(entry);
     }
+
+    inst()._tile_ids.clear();
+    inst()._item_ids.clear();
+    for (auto& [nmspace, reg] : inst()._namespaces) {
+        for (auto& [name, tile] : reg.tiles) inst()._tile_ids.emplace(nmspace, name);
+        for (auto& [name, item] : reg.items) inst()._item_ids.emplace(nmspace, name);
+    }
+
     print<success, Manager>("Data reloaded.");
+    #ifdef CLIENT
+    assets::Manager::on_data_changed();
+    #endif
 }
 
 void data::Manager::load_namespace(const std::filesystem::path& root) {
@@ -67,3 +84,6 @@ const data::Item* data::Manager::get_item(const id& id) {
     else print<warning, Manager>("Namespace '{}' contains no such item '{}'.", id.nmspace(), id.name());
     return nullptr;
 }
+
+const std::set<data::id>& data::Manager::tile_ids() { return inst()._tile_ids; }
+const std::set<data::id>& data::Manager::item_ids() { return inst()._item_ids; }

@@ -1,12 +1,11 @@
 #pragma once
 
 #include <util/primitive_aliases.h>
-#include <terrain/tile_type.h>
-#include <terrain/tiles.h>
+#include <data/namespaced_id.h>
 
 class Tile {
 public:
-    static constexpr uint SIZE = 8;
+    static constexpr const uint SIZE = 8;
 
     enum class Shape : uint8 {
         SINGLE = 0,
@@ -37,17 +36,17 @@ public:
         OPEN_RTB_CORNER_RT = 16, OPEN_LTB_CORNER_LT = 17,
     };
 
-    Tile(const TileType& = tiles::air, Shape = Shape::SINGLE);
+    Tile(const data::id& = "default::air"_id, Shape = Shape::SINGLE);
 
-    const TileType& type() const; 
+    const data::id& type() const; 
     Shape shape() const; void set_shape(Shape);
 
-    bool is(const TileType&) const;
+    bool is(const data::id&) const;
 
-    static bool should_connect(const TileType&, const TileType&);
+    static bool should_connect(const data::id&, const data::id&);
     bool should_connect_to(const Tile&);
 
 private:
-    const TileType* _type;
+    data::id _type_id;
     Shape _shape;
 };

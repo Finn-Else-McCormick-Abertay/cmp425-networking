@@ -14,4 +14,10 @@ std::string data::id::as_string() const { return _namespace + "::" + _name; }
 
 data::id::operator std::string() const { return as_string(); }
 
-data::id literal::operator ""_id(const char* literal, size_t size) { return data::id(std::string(literal)); }
+std::strong_ordering data::id::operator<=>(const data::id& rhs) const {
+    return as_string() <=> rhs.as_string();
+}
+
+bool data::id::operator==(const data::id& rhs) const {
+    return _namespace == rhs._namespace && _name == rhs._name;
+}

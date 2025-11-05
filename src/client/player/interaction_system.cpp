@@ -20,7 +20,7 @@ void player::InteractionSystem::tick(float dt) {
             auto local_tile_pos = to_uvec(world_tile_pos - (chunk_pos * (float)Chunk::SIZE_TILES));
 
             Chunk* chunk = _world->get_or_make_chunk_at(chunk_pos);
-            chunk->set_tile_at(local_tile_pos, tiles::stone);
+            chunk->set_tile_at(local_tile_pos, Tile("default::stone"_id));
         }
         if (actions::destroy.down()) {
             auto world_tile_pos = CameraManager::pixel_to_world(actions::destroy.value()) / Tile::SIZE;
@@ -28,7 +28,7 @@ void player::InteractionSystem::tick(float dt) {
             auto local_tile_pos = to_uvec(world_tile_pos - (chunk_pos * (float)Chunk::SIZE_TILES));
             
             Chunk* chunk = _world->get_or_make_chunk_at(chunk_pos);
-            chunk->set_tile_at(local_tile_pos, tiles::air);
+            chunk->set_tile_at(local_tile_pos, Tile("default::air"_id));
         }
     }
 }

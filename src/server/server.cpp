@@ -3,9 +3,6 @@
 #include <terrain/world.h>
 #include <util/console.h>
 
-#define __TILE_SYMBOL_DEFINITIONS__
-#include <terrain/tiles.h>
-
 using namespace std;
 
 int main() {    

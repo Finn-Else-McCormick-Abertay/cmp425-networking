@@ -6,8 +6,10 @@
 #include <util/prelude.h>
 #include <util/console.h>
 
+#include <data/definitions.h>
+#include <data/data_manager.h>
+
 using namespace std;
-using namespace tiles;
 
 Chunk::Chunk() : _tiles{} {}
 
@@ -65,7 +67,10 @@ void Chunk::set_chunk_neighbour(const ivec2& dir, Chunk* neighbour, bool recursi
 
 void Chunk::update_shape_of(const uvec2& pos) {
     Tile* tile = tile_at(pos);
-    if (!tile->type().meta().display) return;
+    if (auto tile_def = data::Manager::get_tile(tile->type());
+        tile_def && holds_alternative<data::DefaultModel>(tile_def->model)
+        && get<data::DefaultModel>(tile_def->model) == data::DefaultModel::none
+    ) return;
 
     map<ivec2, bool> should_connect_in_dir;
     for (int i = -1; i <= 1; ++i) { for (int j = -1; j <= 1; ++j) {
