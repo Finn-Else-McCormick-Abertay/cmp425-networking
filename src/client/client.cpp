@@ -25,11 +25,11 @@
 #include <save/save_manager.h>
 
 #include <util/std_aliases.h>
+#include <ranges>
 
 using namespace std;
 
 int main() {
-
     InputManager::init();
     InputManager::setup_default_binds();
 
@@ -39,6 +39,9 @@ int main() {
 
     auto player_camera = Camera("player");
     auto interaction_system = player::InteractionSystem(&world);
+
+    for (auto& id : data::Manager::tile_ids()) print<info>("{} -> {}", id, data::Manager::id_mapping(id));
+    for (auto& id : data::Manager::item_ids()) print<info>("{} -> {}", id, data::Manager::id_mapping(id));
 
     Window window;
 
@@ -79,6 +82,5 @@ int main() {
     });
 
     window.enter_main_loop();
-
     SaveManager::save(world);
 }

@@ -4,9 +4,7 @@
             "model": "none",
             "collision": "none"
         },
-        "stone": {
-        },
-        "dirt": {
-        }
+        "stone": {},
+        "dirt": {}
     }
 }
