@@ -37,6 +37,17 @@ Chunk* World::get_or_make_chunk_at(const ivec2& chunk_coords) {
 }
 
 
+std::vector<Chunk> World::get_flattened_chunks() const {
+    std::vector<Chunk> chunks_flat;
+    for (auto& [pos, chunk] : _chunk_map) if (!chunk.empty()) chunks_flat.push_back(chunk);
+    return chunks_flat;
+    return {};
+}
+void World::set_chunks_from_flattened(const std::vector<Chunk>& chunks) {
+    for (auto& chunk : chunks) set_chunk(chunk._chunk_coords, make_optional(move(chunk)));
+}
+
+
 World::iterator World::begin() { return World::iterator(_chunk_map.begin()); }
 World::iterator World::end() { return World::iterator(_chunk_map.end()); }
 

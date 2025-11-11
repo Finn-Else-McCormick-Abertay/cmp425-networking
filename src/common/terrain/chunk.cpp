@@ -11,7 +11,24 @@
 
 using namespace std;
 
-Chunk::Chunk() : _tiles{} {}
+Chunk::Chunk() : _tiles(), _neighbours(), _chunk_coords() {}
+
+Chunk::Chunk(const Chunk& rhs) : _chunk_coords(rhs._chunk_coords), _neighbours(rhs._neighbours), _tiles(rhs._tiles) {}
+Chunk::Chunk(Chunk&& rhs) : _chunk_coords(move(rhs._chunk_coords)), _neighbours(move(rhs._neighbours)), _tiles(move(rhs._tiles)) {}
+
+Chunk& Chunk::operator=(const Chunk& rhs) {
+    _chunk_coords = rhs._chunk_coords;
+    _neighbours = rhs._neighbours;
+    _tiles = rhs._tiles;
+    return *this;
+}
+
+Chunk& Chunk::operator=(Chunk&& rhs) {
+    _chunk_coords = move(rhs._chunk_coords);
+    _neighbours = move(rhs._neighbours);
+    _tiles = move(rhs._tiles);
+    return *this;
+}
 
 const ivec2& Chunk::get_coords() const { return _chunk_coords; }
 
@@ -28,12 +45,18 @@ uvec2 Chunk::coords_from_index(size_t index) {
     return uvec2( index % SIZE_TILES, index / SIZE_TILES );
 }
 
+bool Chunk::empty() const {
+    for (auto& tile : _tiles) { if (!tile.is("default::air"_id)) return false; }
+    return true;
+}
+
 Tile* Chunk::tile_at(const uvec2& pos) { return is_in_range(pos) ? &_tiles.at(index_from_coords(pos)) : nullptr; }
 const Tile* Chunk::tile_at(const uvec2& pos) const { return is_in_range(pos) ? &_tiles.at(index_from_coords(pos)) : nullptr; }
-bool Chunk::set_tile_at(const uvec2& pos, Tile tile) {
+bool Chunk::set_tile_at(const uvec2& pos, Tile tile, bool update) {
     if (!is_in_range(pos)) return false;
     _tiles[index_from_coords(pos)] = tile;
 
+    if (!update) return true;
     // Update shapes
     for (int i = -1; i <= 1; ++i) { for (int j = -1; j <= 1; ++j) {
         ivec2 nbr_pos = ivec2(i, j) + pos;
@@ -54,6 +77,23 @@ bool Chunk::set_tile_at(const uvec2& pos, Tile tile) {
     return true;
 }
 
+std::array<data::id, Chunk::SIZE_TILES * Chunk::SIZE_TILES> Chunk::get_tile_ids() const {
+    std::array<data::id, Chunk::SIZE_TILES * Chunk::SIZE_TILES> arr {};
+    for (size_t i = 0; i < _tiles.size(); ++i) arr[i] = _tiles.at(i).type().id();
+    return arr;
+}
+
+void Chunk::set_tiles_from_ids(const std::array<data::id, SIZE_TILES * SIZE_TILES>& arr) {
+    for (size_t i = 0; i < _tiles.size(); ++i) _tiles[i] = Tile(arr.at(i));
+    // Update shapes
+    for (uint i = 0; i < SIZE_TILES; ++i) { for (uint j = 0; j < SIZE_TILES; ++j) { update_shape_of(uvec2(i, j)); } }
+    // Update neighbour shapes
+    for (int i = -1; i <= 1; ++i) { for (int j = -1; j <= 1; ++j) {
+        if (i == 0 && j == 0) continue;
+        update_shapes_along_neighbour_border(ivec2(i, j), true);
+    }}
+}
+
 Chunk* Chunk::get_chunk_neighbour(const ivec2& dir) {
     assert(abs(dir.x) <= 1 && abs(dir.y) <= 1 && !(dir.x == 0 && dir.y == 0));
     return _neighbours.contains(dir) ? _neighbours.at(dir) : nullptr;
@@ -63,6 +103,48 @@ void Chunk::set_chunk_neighbour(const ivec2& dir, Chunk* neighbour, bool recursi
     assert(abs(dir.x) <= 1 && abs(dir.y) <= 1 && !(dir.x == 0 && dir.y == 0));
     _neighbours[dir] = neighbour;
     if (neighbour && recursive) neighbour->set_chunk_neighbour(-dir, this, false);
+    if (!recursive) update_shapes_along_neighbour_border(dir);
+}
+
+void Chunk::update_shapes_along_neighbour_border(const ivec2& dir, bool neighbour_only) {
+    assert(abs(dir.x) <= 1 && abs(dir.y) <= 1 && !(dir.x == 0 && dir.y == 0));
+    Chunk* neighbour = get_chunk_neighbour(dir);
+
+    // Corner
+    if (dir.x != 0 && dir.y != 0) {
+        uvec2 corner, opposing_corner;
+        if (dir.x < 0) { corner.x = 0; opposing_corner.x = SIZE_TILES - 1; }
+        else if (dir.x > 0) { corner.x = SIZE_TILES - 1; opposing_corner.x = 0; }
+
+        if (dir.y < 0) { corner.y = 0; opposing_corner.y = SIZE_TILES - 1; }
+        else if (dir.y > 0) { corner.y = SIZE_TILES - 1; opposing_corner.y = 0; }
+
+        if (!neighbour_only) update_shape_of(corner);
+        if (neighbour) neighbour->update_shape_of(opposing_corner);
+    }
+    // Vertical
+    else if (dir.y == 0) {
+        uint column, opposing_column;
+        if (dir.x < 0) { column = 0; opposing_column = SIZE_TILES - 1; }
+        else if (dir.x > 0) { column = SIZE_TILES - 1; opposing_column = 0; }
+
+        for (uint i = 0; i < SIZE_TILES; ++i) {
+            if (!neighbour_only) update_shape_of(ivec2(column, i));
+            if (neighbour) neighbour->update_shape_of(ivec2(opposing_column, i));
+        }
+    }
+    // Horizontal
+    else if (dir.x == 0) {
+        uint row, opposing_row;
+        if (dir.y < 0) { row = 0; opposing_row = SIZE_TILES - 1; }
+        else if (dir.y > 0) { row = SIZE_TILES - 1; opposing_row = 0; }
+        
+        for (uint i = 0; i < SIZE_TILES; ++i) {
+            if (!neighbour_only) update_shape_of(ivec2(i, row));
+            if (neighbour) neighbour->update_shape_of(ivec2(i, opposing_row));
+        }
+    }
+
 }
 
 void Chunk::update_shape_of(const uvec2& pos) {

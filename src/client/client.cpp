@@ -22,6 +22,8 @@
 #include <assets/asset_manager.h>
 #include <type_traits>
 
+#include <save/save_manager.h>
+
 #include <util/std_aliases.h>
 
 using namespace std;
@@ -33,7 +35,7 @@ int main() {
 
     data::Manager::reload();
     
-    auto world = World();
+    World world = SaveManager::load().or_else([](){ return std::make_optional<World>(); }).value();
 
     auto player_camera = Camera("player");
     auto interaction_system = player::InteractionSystem(&world);
@@ -64,7 +66,7 @@ int main() {
             // Draw tiles
             for (auto [local_pos, tile] : chunk) {
                 if (tile->type().model_type() == data::TileHandle::ModelType::Block) {
-                    tile_rect.setTexture(assets::Manager::get_tile_texture(tile->type().id()));
+                    tile_rect.setTexture(&assets::Manager::get_tile_texture(tile->type().id()));
                     tile_rect.setPosition(to_sfvec_of<float>(chunk_true_coords + to_fvec(local_pos) * Tile::SIZE));
 
                     uint8 shape = (uint8)tile->shape();
@@ -77,4 +79,6 @@ int main() {
     });
 
     window.enter_main_loop();
+
+    SaveManager::save(world);
 }

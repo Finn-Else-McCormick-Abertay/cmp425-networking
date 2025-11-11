@@ -7,6 +7,8 @@
 
 #include <cmath>
 
+#include <glaze/json.hpp>
+
 using namespace std;
 
 player::InteractionSystem::InteractionSystem(World* world) : _world(world) {}
@@ -29,6 +31,12 @@ void player::InteractionSystem::tick(float dt) {
             
             Chunk* chunk = _world->get_or_make_chunk_at(chunk_pos);
             chunk->set_tile_at(local_tile_pos, Tile("default::air"_id));
+        }
+
+        if (actions::toggle_debug.just_pressed()) {
+            auto result = glz::write_json(*_world);
+            if (result) print<debug>(result.value());
+            else print<error>("World serialisation error: {}", result.error().custom_error_message);
         }
     }
 }

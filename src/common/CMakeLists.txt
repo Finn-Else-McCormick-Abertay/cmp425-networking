@@ -8,6 +8,8 @@ set(COMMON_SOURCES
     data/namespaced_id.cpp
     data/handle/handles.cpp
 
+    save/save_manager.cpp
+
     system/system_manager.cpp
     system/system.cpp
 

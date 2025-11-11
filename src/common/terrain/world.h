@@ -3,6 +3,10 @@
 #include <terrain/chunk.h>
 #include <optional>
 #include <map>
+#include <vector>
+
+#include <glaze/glaze.hpp>
+#include <util/std_aliases.h>
 
 class World {
 public:
@@ -15,7 +19,11 @@ public:
     Chunk* get_or_make_chunk_at(const ivec2& chunk_coords);
 
 private:
+    friend class glz::meta<World>;
     std::map<ivec2, Chunk> _chunk_map;
+
+    std::vector<Chunk> get_flattened_chunks() const;
+    void set_chunks_from_flattened(const std::vector<Chunk>&);
 
 public:
     struct iterator {
@@ -52,4 +60,10 @@ public:
     iterator end();
     const_iterator cbegin() const;
     const_iterator cend() const;
+};
+
+template<> struct glz::meta<World> {
+    static constexpr auto value = object(
+        "chunks", glz::custom<&World::set_chunks_from_flattened, &World::get_flattened_chunks>
+    );
 };

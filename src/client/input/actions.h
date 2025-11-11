@@ -33,6 +33,8 @@ namespace actions {
         },
         .modifier = mod::constrain_length_to_norm
     );
+
+    INPUT_ACTION(toggle_debug, bool);
 }
 
 namespace internal_actions {
