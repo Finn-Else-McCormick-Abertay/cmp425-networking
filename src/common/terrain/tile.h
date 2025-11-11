@@ -2,6 +2,7 @@
 
 #include <util/primitive_aliases.h>
 #include <data/namespaced_id.h>
+#include <data/handle/tile.h>
 
 class Tile {
 public:
@@ -38,7 +39,7 @@ public:
 
     Tile(const data::id& = "default::air"_id, Shape = Shape::SINGLE);
 
-    const data::id& type() const; 
+    const data::TileHandle& type() const;
     Shape shape() const; void set_shape(Shape);
 
     bool is(const data::id&) const;

@@ -6,6 +6,7 @@ set(COMMON_SOURCES
 
     data/data_manager.cpp
     data/namespaced_id.cpp
+    data/handle/handles.cpp
 
     system/system_manager.cpp
     system/system.cpp

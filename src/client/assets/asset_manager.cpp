@@ -19,41 +19,26 @@ sf::Texture* assets::Manager::get_item_texture(const data::id& id) { if (inst().
 void assets::Manager::on_data_changed() {
     for (auto& id : data::Manager::tile_ids()) {
         auto tile = data::Manager::get_tile(id);
-        filesystem::path texture_logical_path;
-        if (tile->texture) texture_logical_path = tile->texture.value();
-        else if (holds_alternative<data::DefaultModel>(tile->model)) {
-            auto default_model = get<data::DefaultModel>(tile->model);
-            if (default_model == data::DefaultModel::block) {
-                texture_logical_path = "tileset/" + id.name();
-            }
-        }
-        else { /* Handle manual models */ }
-
-        if (texture_logical_path.empty()) continue;
-
-        auto filepath = filesystem::relative("resources/assets/textures/") / texture_logical_path.replace_extension(".png").lexically_normal();
-        if (filesystem::exists(filepath)) {
-            sf::Texture texture; texture.loadFromFile(filepath);
-            inst()._tile_textures[id] = move(texture);
-            print<info, Manager>("Loaded texture from '{}'.", filepath);
-        }
-        else print<error, Manager>("Could not load texture from '{}'.", filepath);
+        filesystem::path logical_path = tile.value().get()._texture_path;
+        if (!logical_path.empty()) attempt_load_texture_to(inst()._tile_textures, id, logical_path);
     }
     
     for (auto& id : data::Manager::item_ids()) {
         auto item = data::Manager::get_item(id);
-        filesystem::path texture_logical_path;
-        if (item->texture) texture_logical_path = item->texture.value();
-        else texture_logical_path = "items/" + id.name();
-
-        if (texture_logical_path.empty()) continue;
-
-        auto filepath = filesystem::relative("resources/assets/textures/") / texture_logical_path.replace_extension(".png").lexically_normal();
-        if (filesystem::exists(filepath)) {
-            sf::Texture texture; texture.loadFromFile(filepath);
-            inst()._item_textures[id] = move(texture);
-            print<info, Manager>("Loaded texture from '{}'.", filepath);
-        }
-        else print<error, Manager>("Could not load texture from '{}'.", filepath);
+        filesystem::path logical_path = item.value().get()._texture_path;
+        if (!logical_path.empty()) attempt_load_texture_to(inst()._item_textures, id, logical_path);
     }
+}
+
+void assets::Manager::attempt_load_texture_to(map<data::id, sf::Texture>& map, const data::id& id, const filesystem::path& path) {
+    auto full_path = filesystem::relative("resources/assets/textures/") / path;
+    full_path = full_path.replace_extension(".png").lexically_normal();
+    
+    if (!filesystem::exists(full_path)) return print<error, Manager>("No such texture '{}'.", full_path);
+    
+    sf::Texture texture;
+    if (!texture.loadFromFile(full_path)) return print<error, Manager>("Failed to load texture from '{}'.", full_path);
+
+    map[id] = move(texture);
+    print<info, Manager>("Loaded texture from '{}'.", full_path);
 }

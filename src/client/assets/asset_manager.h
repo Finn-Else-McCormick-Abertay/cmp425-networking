@@ -17,6 +17,8 @@ namespace assets {
         static sf::Texture* get_item_texture(const data::id&);
 
     private:
+        static void attempt_load_texture_to(std::map<data::id, sf::Texture>&, const data::id&, const std::filesystem::path&);
+
         std::map<data::id, sf::Texture> _tile_textures;
         std::map<data::id, sf::Texture> _item_textures;
     };

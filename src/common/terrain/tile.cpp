@@ -1,8 +1,19 @@
 #include "tile.h"
 
+#include <data/data_manager.h>
+#include <exception>
+
+using namespace std;
+
 Tile::Tile(const data::id& id, Shape shape) : _type_id(id), _shape(shape) {}
 
-const data::id& Tile::type() const { return _type_id; }
+const data::TileHandle& Tile::type() const {
+    auto opt = data::Manager::get_tile(_type_id);
+    if (!opt) throw exception("Attempted to access type handle for tile with invalid type.");
+    return opt.value();
+}
+
+
 Tile::Shape Tile::shape() const { return _shape; }
 void Tile::set_shape(Shape shape) { _shape = shape; }
 

@@ -9,13 +9,9 @@
 #include <player/interaction_system.h>
 #include <camera/camera.h>
 
-#include <map>
-#include <iostream>
-
 #define __INPUT_ACTION_SYMBOL_DEFINITIONS__
 #include <input/actions.h>
 
-#include <data/definitions.h>
 #include <glaze/json.hpp>
 
 #include <util/helper/enum_serialization.h>
@@ -24,6 +20,9 @@
 #include <data/namespaced_id.h>
 
 #include <assets/asset_manager.h>
+#include <type_traits>
+
+#include <util/std_aliases.h>
 
 using namespace std;
 
@@ -64,18 +63,15 @@ int main() {
 
             // Draw tiles
             for (auto [local_pos, tile] : chunk) {
-                if (auto tile_def = data::Manager::get_tile(tile->type());
-                    tile_def && holds_alternative<data::DefaultModel>(tile_def->model)
-                    && get<data::DefaultModel>(tile_def->model) == data::DefaultModel::none
-                ) continue;
+                if (tile->type().model_type() == data::TileHandle::ModelType::Block) {
+                    tile_rect.setTexture(assets::Manager::get_tile_texture(tile->type().id()));
+                    tile_rect.setPosition(to_sfvec_of<float>(chunk_true_coords + to_fvec(local_pos) * Tile::SIZE));
 
-                tile_rect.setTexture(assets::Manager::get_tile_texture(tile->type()));
-                tile_rect.setPosition(to_sfvec_of<float>(chunk_true_coords + to_fvec(local_pos) * Tile::SIZE));
-
-                uint8 shape = (uint8)tile->shape();
-                uvec2 texture_tile_index = uvec2(shape % 6, shape / 6);
-                tile_rect.setTextureRect(sf::IntRect(to_sfvec_of<int>(texture_tile_index * Tile::SIZE), to_sfvec(ivec2(Tile::SIZE, Tile::SIZE))));
-                target.draw(tile_rect);
+                    uint8 shape = (uint8)tile->shape();
+                    uvec2 texture_tile_index = uvec2(shape % 6, shape / 6);
+                    tile_rect.setTextureRect(sf::IntRect(to_sfvec_of<int>(texture_tile_index * Tile::SIZE), to_sfvec(ivec2(Tile::SIZE, Tile::SIZE))));
+                    target.draw(tile_rect);
+                }
             }
         }
     });

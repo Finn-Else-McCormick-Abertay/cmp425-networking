@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <unordered_map>
 
 #include <util/glaze_prelude.h>
 #include <glaze/json.hpp>
@@ -16,19 +17,63 @@ using namespace std;
 
 DEFINE_SINGLETON(data::Manager);
 
+namespace data_impl {
+    struct Registry {
+        std::unordered_map<str, data::definition::Tile> tiles;
+        std::unordered_map<str, data::definition::Item> items;
+    };
+    static_assert(glz::reflectable<Registry>);
+
+    Registry load_namespace(const str& namespace_id, const std::filesystem::path& root) {
+        Registry existing;
+        for (auto entry : filesystem::directory_iterator(root)) {
+            if (entry.path().extension().generic_string() == ".json") {
+                auto file = ifstream(entry.path());
+                if (!file) continue;
+                
+                stringstream buffer;
+                buffer << file.rdbuf();
+
+                auto result = glz::read_json<Registry>(buffer.str());
+                if (!result) {
+                    print<error, data::Manager>("Error loading from '{}' : {} ({}).",
+                        entry.path(), result.error().custom_error_message, (int)result.error().ec);
+                    continue;
+                }
+
+                Registry reg = result.value();
+                for (auto& [name, tile] : reg.tiles) existing.tiles[name] = tile;
+                for (auto& [name, item] : reg.items) existing.items[name] = item;
+
+            }
+        }
+        print<success, data::Manager>("Loaded namespace '{}'.", namespace_id);
+        return existing;
+    }
+}
+
 void data::Manager::reload() {
-    inst()._namespaces.clear();
+    inst()._tile_handles.clear();
+    inst()._item_handles.clear();
+    std::unordered_map<str, data_impl::Registry> namespaces;
 
     auto data_root = filesystem::relative("resources/data");
     for (auto& entry : filesystem::directory_iterator(data_root)) {
-        if (entry.is_directory()) load_namespace(entry);
+        if (entry.is_directory()) {
+            str namespace_id = entry.path().filename().generic_string();
+            namespaces[namespace_id] = data_impl::load_namespace(namespace_id, entry);
+        }
     }
 
-    inst()._tile_ids.clear();
-    inst()._item_ids.clear();
-    for (auto& [nmspace, reg] : inst()._namespaces) {
-        for (auto& [name, tile] : reg.tiles) inst()._tile_ids.emplace(nmspace, name);
-        for (auto& [name, item] : reg.items) inst()._item_ids.emplace(nmspace, name);
+    for (auto& [nmspace, reg] : namespaces) {
+        for (auto& [name, tile_def] : reg.tiles) {
+            auto tile_id = id(nmspace, name);
+            inst()._tile_handles.emplace(tile_id, TileHandle(tile_id, tile_def));
+        }
+        for (auto& [name, item_def] : reg.items) {
+            auto item_id = id(nmspace, name);
+            inst()._item_handles.emplace(item_id, ItemHandle(item_id, item_def));
+        }
     }
 
     print<success, Manager>("Data reloaded.");
@@ -37,53 +82,14 @@ void data::Manager::reload() {
     #endif
 }
 
-void data::Manager::load_namespace(const std::filesystem::path& root) {
-    std::string namespace_id = root.filename().generic_string();
-    inst()._namespaces.erase(namespace_id);
-
-    for (auto file : filesystem::directory_iterator(root)) {
-        if (file.path().extension().generic_string() == ".json") additive_load_file(namespace_id, file.path());
-    }
-    print<success, Manager>("Loaded namespace '{}'.", namespace_id);
+opt_cref<data::TileHandle> data::Manager::get_tile(const id& id) {
+    if (inst()._tile_handles.contains(id)) return cref(inst()._tile_handles.at(id));
+    print<warning, Manager>("Namespace '{}' contains no such tile '{}'.", id.nmspace(), id.name());
+    return nullopt;
 }
 
-void data::Manager::additive_load_file(const string& nmspace, const filesystem::path& filepath) {
-    auto file = ifstream(filepath);
-    if (!file) return;
-    
-    stringstream buffer;
-    buffer << file.rdbuf();
-
-    auto result = glz::read_json<Registry>(buffer.str());
-    if (!result) return print<error, Manager>("Error loading from '{}' : {} ({}).", filepath, result.error().custom_error_message, (int)result.error().ec);
-
-    Registry reg = result.value();
-    
-    if (!inst()._namespaces.contains(nmspace)) inst()._namespaces.emplace(nmspace, reg);
-    else {
-        auto& existing_reg = inst()._namespaces.at(nmspace);
-        for (auto& [name, tile] : reg.tiles) existing_reg.tiles[name] = tile;
-        for (auto& [name, item] : reg.items) existing_reg.items[name] = item;
-    }
+opt_cref<data::ItemHandle> data::Manager::get_item(const id& id) {
+    if (inst()._item_handles.contains(id)) return cref(inst()._item_handles.at(id));
+    print<warning, Manager>("Namespace '{}' contains no such item '{}'.", id.nmspace(), id.name());
+    return nullopt;
 }
-
-const data::Manager::Registry* data::Manager::get_namespace(const std::string& nmspace) {
-    if (inst()._namespaces.contains(nmspace)) return &inst()._namespaces.at(nmspace);
-    else print<warning, Manager>("No such namespace '{}'.", nmspace);
-    return nullptr;
-}
-
-const data::Tile* data::Manager::get_tile(const id& id) {
-    if (auto reg = get_namespace(id.nmspace()); reg && reg->tiles.contains(id.name())) return &reg->tiles.at(id.name());
-    else print<warning, Manager>("Namespace '{}' contains no such tile '{}'.", id.nmspace(), id.name());
-    return nullptr;
-}
-
-const data::Item* data::Manager::get_item(const id& id) {
-    if (auto reg = get_namespace(id.nmspace()); reg && reg->items.contains(id.name())) return &reg->items.at(id.name());
-    else print<warning, Manager>("Namespace '{}' contains no such item '{}'.", id.nmspace(), id.name());
-    return nullptr;
-}
-
-const std::set<data::id>& data::Manager::tile_ids() { return inst()._tile_ids; }
-const std::set<data::id>& data::Manager::item_ids() { return inst()._item_ids; }

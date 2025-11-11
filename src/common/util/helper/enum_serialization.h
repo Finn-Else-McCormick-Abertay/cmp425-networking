@@ -9,6 +9,8 @@
 #define __INTERNAL_ENUM_FINAL_FORMATNO_TYPE_NAME(EnumName, ValueName) ValueName
 #define __INTERNAL_ENUM_FINAL_FORMAT(EnumName, ValueName) fmt::format("{}::{}", EnumName, ValueName)
 
+#define __INTERNAL_ENUM_ADD_SEMICOLON(Line) Line;
+
 #define ENUM_FORMATTER(EnumName, Values, ...) \
 template <> struct fmt::formatter<EnumName>: formatter<string_view> { \
     inline auto format(EnumName v, format_context& ctx) const { \
@@ -19,7 +21,7 @@ template <> struct fmt::formatter<EnumName>: formatter<string_view> { \
             default: value_name = fmt::format("unknown({})", fmt::underlying(v)); \
         } \
         bool use_type_name = true; \
-        WRAP(,;,__VA_ARGS__) \
+        WRAP_CALL(__INTERNAL_ENUM_ADD_SEMICOLON,__VA_ARGS__) \
         if (use_type_name) return formatter<std::string>().format(fmt::format("{}::{}", #EnumName, value_name), ctx); \
         else return formatter<std::string>().format(value_name, ctx); \
     } \
