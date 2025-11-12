@@ -8,7 +8,9 @@
 #include <glaze/glaze.hpp>
 #include <util/std_aliases.h>
 
-class World {
+#include <render/drawable.h>
+
+class World : IDrawable {
 public:
     World();
 
@@ -17,6 +19,11 @@ public:
     Chunk* set_chunk(const ivec2& chunk_coords, std::optional<Chunk>&&, bool replace = true);
 
     Chunk* get_or_make_chunk_at(const ivec2& chunk_coords);
+
+    virtual std::vector<uint> draw_layers() const override;
+    #ifdef CLIENT
+    virtual void draw(sf::RenderTarget&, uint layer) override;
+    #endif
 
 private:
     friend class glz::meta<World>;

@@ -4,28 +4,31 @@
 
 #include <string>
 #include <functional>
+#include <filesystem>
 
 #include <util/vec.h>
+#include <util/std_aliases.h>
 
 class Window {
 public:
     Window(
-        std::string title = "CMP425 Coursework",
+        str title = "CMP425 Coursework",
         uvec2 size = { 800, 600 }
     );
+
     bool is_open() const;
 
-    void set_draw_callback(std::function<void(sf::RenderTarget&)>&& cb);
-    void set_close_request_callback(std::function<bool(Window&)>&& cb);
+    const str& title() const;
+    void set_title(const str&);
 
-    void enter_main_loop();
+    void set_icon(const std::filesystem::path&);
 
-private:
-    void render();
+    void enter_loop();
 
 private:
     sf::RenderWindow _render_window;
+    str _title;
 
-    std::function<void(sf::RenderTarget&)> _draw_cb;
-    std::function<bool(Window&)> _close_request_cb;
+    void process_thread();
+    void render_thread();
 };

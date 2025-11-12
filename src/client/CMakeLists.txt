@@ -8,8 +8,8 @@ target_sources(${CLIENT_NAME} PRIVATE
 
     player/interaction_system.cpp
 
-    camera/camera.cpp
-    camera/camera_manager.cpp
+    render/camera.cpp
+    render/render_manager.cpp
 
     assets/asset_manager.cpp
 )

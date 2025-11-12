@@ -10,6 +10,8 @@ set(COMMON_SOURCES
 
     save/save_manager.cpp
 
+    render/drawable.cpp
+
     system/system_manager.cpp
     system/system.cpp
 
