@@ -1,6 +1,5 @@
 #include "system_manager.h"
 
-using namespace std;
 
 DEFINE_SINGLETON(SystemManager);
 

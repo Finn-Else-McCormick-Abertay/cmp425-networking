@@ -2,11 +2,13 @@
 
 #include <util/helper/singleton.h>
 
-#include <SFML/Graphics/Texture.hpp>
-#include <map>
-#include <filesystem>
 #include <data/namespaced_id.h>
-#include <util/std_aliases.h>
+#include <alias/SFML/graphics.h>
+
+#include <prelude.h>
+#include <prelude/opt.h>
+#include <prelude/containers.h>
+#include <prelude/filesystem.h>
 
 namespace assets {
     class Manager { DECL_SINGLETON(Manager);
@@ -14,17 +16,17 @@ namespace assets {
         static void reload();
         static void on_data_changed();
         
-        static const sf::Texture& get_tile_texture(const data::id&);
-        static const sf::Texture& get_item_texture(const data::id&);
+        static const Texture& get_tile_texture(const data::id&);
+        static const Texture& get_item_texture(const data::id&);
 
-        static opt_cref<sf::Texture> try_get_tile_texture(const data::id&);
-        static opt_cref<sf::Texture> try_get_item_texture(const data::id&);
+        static opt_cref<Texture> try_get_tile_texture(const data::id&);
+        static opt_cref<Texture> try_get_item_texture(const data::id&);
 
     private:
-        static opt<sf::Texture> attempt_load_texture(const std::filesystem::path&);
+        static opt<Texture> attempt_load_texture(const filepath&);
 
-        sf::Texture _placeholder_texture;
-        std::map<data::id, sf::Texture> _tile_textures;
-        std::map<data::id, sf::Texture> _item_textures;
+        Texture _placeholder_texture;
+        hashmap<data::id, Texture> _tile_textures;
+        hashmap<data::id, Texture> _item_textures;
     };
 }

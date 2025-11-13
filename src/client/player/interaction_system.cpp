@@ -1,6 +1,6 @@
 #include "interaction_system.h"
 
-#include <util/console.h>
+#include <console.h>
 #include <util/vec_convert.h>
 #include <input/actions.h>
 #include <render/render_manager.h>
@@ -9,7 +9,6 @@
 
 #include <glaze/json.hpp>
 
-using namespace std;
 
 player::InteractionSystem::InteractionSystem(World* world) : _world(world) {}
 

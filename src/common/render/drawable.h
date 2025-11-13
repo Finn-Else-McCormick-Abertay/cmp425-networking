@@ -1,10 +1,10 @@
 #pragma once
 
-#include <util/primitive_aliases.h>
+#include <prelude.h>
+#include <prelude/containers.h>
 #ifdef CLIENT
 #include <SFML/Graphics.hpp>
 #endif
-#include <vector>
 
 namespace layers {
     static constexpr uint DEFAULT = 0;
@@ -18,7 +18,7 @@ public:
     IDrawable(const IDrawable&); IDrawable(IDrawable&&);
     virtual ~IDrawable();
 
-    virtual std::vector<uint> draw_layers() const;
+    virtual dyn_arr<uint> draw_layers() const;
 
     #ifdef CLIENT
     virtual void draw(sf::RenderTarget&, uint layer) = 0;

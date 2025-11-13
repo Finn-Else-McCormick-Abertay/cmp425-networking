@@ -1,6 +1,6 @@
 #pragma once
 
-#include <util/primitive_aliases.h>
+#include <alias/primitives.h>
 #include <data/namespaced_id.h>
 #include <data/handle/tile.h>
 

@@ -130,4 +130,6 @@
         "valarray": "cpp"
     },
     "C_Cpp.vcpkg.enabled": false,
+    "explorer.sortOrder": "mixed",
+    "explorer.sortOrderLexicographicOptions": "upper",
 }

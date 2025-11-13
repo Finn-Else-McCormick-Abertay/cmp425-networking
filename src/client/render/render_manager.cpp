@@ -1,10 +1,8 @@
 #include "render_manager.h"
-#include <util/console.h>
+#include <console.h>
 #include <util/vec_convert.h>
 
 #include <typeinfo>
-
-using namespace std;
 
 DEFINE_SINGLETON(RenderManager);
 

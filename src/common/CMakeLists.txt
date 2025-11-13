@@ -15,7 +15,7 @@ set(COMMON_SOURCES
     system/system_manager.cpp
     system/system.cpp
 
-    util/console.cpp
+    console.cpp
 )
 
 target_sources(${CLIENT_NAME} PRIVATE ${COMMON_SOURCES})

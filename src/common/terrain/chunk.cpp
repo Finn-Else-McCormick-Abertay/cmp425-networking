@@ -1,15 +1,12 @@
 #include "chunk.h"
 #include <cassert>
 #include <iterator>
-#include <map>
-#include <vector>
-#include <util/prelude.h>
-#include <util/console.h>
+
+#include <prelude.h>
+#include <prelude/containers.h>
 
 #include <data/definitions/tile.h>
 #include <data/data_manager.h>
-
-using namespace std;
 
 Chunk::Chunk() : _tiles(), _neighbours(), _chunk_coords() {}
 
@@ -77,13 +74,13 @@ bool Chunk::set_tile_at(const uvec2& pos, Tile tile, bool update) {
     return true;
 }
 
-std::array<data::id, Chunk::SIZE_TILES * Chunk::SIZE_TILES> Chunk::get_tile_ids() const {
-    std::array<data::id, Chunk::SIZE_TILES * Chunk::SIZE_TILES> arr {};
+arr<data::id, Chunk::SIZE_TILES * Chunk::SIZE_TILES> Chunk::get_tile_ids() const {
+    arr<data::id, Chunk::SIZE_TILES * Chunk::SIZE_TILES> arr {};
     for (size_t i = 0; i < _tiles.size(); ++i) arr[i] = _tiles.at(i).type().id();
     return arr;
 }
 
-void Chunk::set_tiles_from_ids(const std::array<data::id, SIZE_TILES * SIZE_TILES>& arr) {
+void Chunk::set_tiles_from_ids(const arr<data::id, SIZE_TILES * SIZE_TILES>& arr) {
     for (size_t i = 0; i < _tiles.size(); ++i) _tiles[i] = Tile(arr.at(i));
     // Update shapes
     for (uint i = 0; i < SIZE_TILES; ++i) { for (uint j = 0; j < SIZE_TILES; ++j) { update_shape_of(uvec2(i, j)); } }
@@ -151,7 +148,7 @@ void Chunk::update_shape_of(const uvec2& pos) {
     Tile* tile = tile_at(pos);
     if (tile->type().model_type() != data::TileHandle::ModelType::Block) return;
 
-    map<ivec2, bool> should_connect_in_dir;
+    bstmap<ivec2, bool> should_connect_in_dir;
     for (int i = -1; i <= 1; ++i) { for (int j = -1; j <= 1; ++j) {
         if (i == 0 && j == 0) continue;
         bool should_connect = false;
@@ -260,7 +257,7 @@ Chunk::const_iterator Chunk::cend() const { return const_iterator(_tiles, _tiles
 
 // Iterators
 
-Chunk::iterator::iterator(tile_array_flat& array, size_t index) : _arr(&array), _i(index) {}
+Chunk::iterator::iterator(tile_arr& array, size_t index) : _arr(&array), _i(index) {}
 
 Chunk::iterator::return_pair Chunk::iterator::operator*() const { return make_pair(Chunk::coords_from_index(_i), &_arr->at(_i)); }
 
@@ -271,7 +268,7 @@ bool operator== (const Chunk::iterator& a, const Chunk::iterator& b) { return a.
 bool operator!= (const Chunk::iterator& a, const Chunk::iterator& b) { return !(a == b); }
 
 
-Chunk::const_iterator::const_iterator(const tile_array_flat& array, size_t index) : _arr(&array), _i(index) {}
+Chunk::const_iterator::const_iterator(const tile_arr& array, size_t index) : _arr(&array), _i(index) {}
 
 Chunk::const_iterator::return_pair Chunk::const_iterator::operator*() const { return make_pair(Chunk::coords_from_index(_i), &_arr->at(_i)); }
 

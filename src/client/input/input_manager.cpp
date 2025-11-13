@@ -1,16 +1,15 @@
 #include "input_manager.h"
-#include <util/vec.h>
+#include <prelude/vec.h>
 #include <util/vec_convert.h>
 
-using namespace std;
 
 DEFINE_SINGLETON(InputManager);
 
-const string& InputManager::get_name(Action* action) { return inst()._action_meta.at(action).name; }
+const str& InputManager::get_name(Action* action) { return inst()._action_meta.at(action).name; }
 const input_impl::ActionDefinition& InputManager::get_definition(Action* action) { return inst()._action_meta.at(action).definition; }
 bool InputManager::is_dependent(Action* action) { return !inst()._action_meta.at(action).definition.value_mirrors.empty() || !inst()._action_meta.at(action).definition.value_sums.empty(); }
 
-InputManager::Action* InputManager::get_action_by_name(const string& name) {
+InputManager::Action* InputManager::get_action_by_name(const str& name) {
     for (auto& [action, meta] : inst()._action_meta) { if (name == meta.name) { return action; } }
     return nullptr;
 }
@@ -26,7 +25,7 @@ void InputManager::init() {
             else print<error, InputManager>("{} attempted to depend on non-existent action '{}'.", meta.name, meta.definition.value_mirrors);
         }
         if (!meta.definition.value_sums.empty()) {
-            std::map<Action*, input_impl::ActionModifier> map;
+            bstmap<Action*, input_impl::ActionModifier> map;
             for (auto& comp : meta.definition.value_sums) {
                 auto dependency = get_action_by_name(comp.name); 
                 if (dependency) {
@@ -35,7 +34,7 @@ void InputManager::init() {
                 }
                 else print<error, InputManager>("{} attempted to depend on non-existent action '{}'.", meta.name, comp.name);
             }
-            inst()._complex_dependencies.emplace(action, std::move(map));
+            inst()._complex_dependencies.emplace(action, move(map));
         }
     }
 
@@ -181,7 +180,7 @@ void InputManager::unbind(ScanCode x, Action& action)           { inst()._bound_
 void InputManager::unbind(Controller::Button x, Action& action) { inst()._bound_controller_buttons[x].erase(&action); }
 void InputManager::unbind(Controller::Axis x, Action& action)   { inst()._bound_controller_axes[x].erase(&action); }
 
-void InputManager::Registry::__register(Action& action, string name, const std::type_info& value_type, input_impl::ActionDefinition&& definition) {
+void InputManager::Registry::__register(Action& action, str name, const std::type_info& value_type, input_impl::ActionDefinition&& definition) {
     if (!inst()._initialised) {
         inst()._actions.insert(&action);
         inst()._action_meta.emplace(&action, InputManager::ActionMeta{ name, std::type_index(value_type), move(definition) } );

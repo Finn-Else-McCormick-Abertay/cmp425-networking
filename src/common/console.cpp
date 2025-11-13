@@ -5,7 +5,7 @@
 
 void console_impl::print(
     const fmt::text_style& style_text, const fmt::text_style& style_title, const fmt::text_style& style_separator,
-    const std::string& type_name, const std::string& owner_name, fmt::string_view fmt, fmt::format_args args
+    const str& type_name, const str& owner_name, fmt::string_view fmt, fmt::format_args args
 ) {
     using namespace fmt;//{:%r} //styled(std::chrono::system_clock::now(), fg(DATE_COLOUR)),
     fmt::print(

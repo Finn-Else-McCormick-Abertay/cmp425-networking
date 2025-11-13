@@ -1,12 +1,14 @@
 #pragma once
 
-#include <util/helper/singleton.h>
+#include <SFML/Graphics/RenderTarget.hpp>
+
 #include <render/camera.h>
 #include <render/drawable.h>
-#include <set>
-#include <map>
-#include <SFML/Graphics/RenderTarget.hpp>
-#include <util/std_aliases.h>
+
+#include <prelude.h>
+#include <prelude/opt.h>
+#include <prelude/containers.h>
+#include <util/helper/singleton.h>
 
 class RenderManager { DECL_SINGLETON(RenderManager);
 public:
@@ -22,10 +24,10 @@ public:
 private:
     friend class Camera; friend class Window;
 
-    std::set<IDrawable*> _added_drawables, _removed_drawables;
-    std::map<uint, std::set<IDrawable*>> _layers;
+    set<IDrawable*> _added_drawables, _removed_drawables;
+    ordered_map<uint, set<IDrawable*>> _layers;
 
-    std::set<Camera*> _cameras; Camera* _active_camera;
+    set<Camera*> _cameras; Camera* _active_camera;
     void on_camera_order_changed();
     void update_target_view();
 

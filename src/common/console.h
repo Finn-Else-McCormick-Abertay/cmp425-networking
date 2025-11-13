@@ -8,25 +8,26 @@
 
 #include <concepts>
 #include <typeinfo>
-#include <string>
-#include <optional>
+
+#include <alias/str.h>
+#include <alias/utility.h>
 
 namespace console_impl {
     static constexpr auto DATE_COLOUR = fmt::color::turquoise;
     static constexpr auto UNKNOWN_COLOUR = fmt::color::red;
 
-    template<typename T> concept has_name = requires(T) { { T::NAME } -> std::convertible_to<std::string>; };
+    template<typename T> concept has_name = requires(T) { { T::NAME } -> std::convertible_to<str>; };
     template<typename T> concept has_text_colour = requires(T) { { T::TEXT_COLOUR } -> std::convertible_to<fmt::detail::color_type>; };
     template<typename T> concept has_title_colour = requires(T) { { T::TITLE_COLOUR } -> std::convertible_to<fmt::detail::color_type>; };
     template<typename T> concept has_separator_colour = requires(T) { { T::SEPARATOR_COLOUR } -> std::convertible_to<fmt::detail::color_type>; };
 
     void print(
         const fmt::text_style& style_text, const fmt::text_style& style_title, const fmt::text_style& style_separator,
-        const std::string& type_name, const std::string& owner_name, fmt::string_view fmt, fmt::format_args args
+        const str& type_name, const str& owner_name, fmt::string_view fmt, fmt::format_args args
     );
 
-    constexpr std::string clean_type_name(const char* type_name) {
-        std::string working(type_name);
+    constexpr str clean_type_name(const char* type_name) {
+        str working(type_name);
         if      (working.starts_with("class "))  working = working.substr(6);
         else if (working.starts_with("struct ")) working = working.substr(7);
         return working;
@@ -34,11 +35,11 @@ namespace console_impl {
 }
 
 template<typename Ctx, typename Owner, typename... Args> void print(fmt::format_string<Args...> fmt, Args&&... args) {
-    std::string ctx_name;
+    str ctx_name;
     if constexpr(console_impl::has_name<Ctx>) ctx_name = Ctx::NAME;
     else ctx_name = console_impl::clean_type_name(typeid(Ctx).name());
     
-    std::string owner_name;
+    str owner_name;
     if constexpr(!std::same_as<Owner, void>) owner_name = console_impl::clean_type_name(typeid(Owner).name());
 
     fmt::detail::color_type text_colour = console_impl::UNKNOWN_COLOUR;
@@ -54,7 +55,7 @@ template<typename Ctx, typename Owner, typename... Args> void print(fmt::format_
     );
 }
 
-template<typename Ctx, typename... Args> void print(fmt::format_string<Args...> fmt, Args&&... args) { print<Ctx, void>(std::move(fmt), std::forward<Args>(args)...); }
+template<typename Ctx, typename... Args> void print(fmt::format_string<Args...> fmt, Args&&... args) { print<Ctx, void>(move(fmt), std::forward<Args>(args)...); }
 template<typename Ctx, typename Owner, typename Arg> void print(Arg val) { print<Ctx, Owner>("{}", val); }
 template<typename Ctx, typename Arg> void print(Arg val) { print<Ctx, void>("{}", val); }
 

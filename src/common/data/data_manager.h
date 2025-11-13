@@ -6,13 +6,12 @@
 #include <data/handle/tile.h>
 #include <data/handle/item.h>
 
-#include <map>
-#include <filesystem>
-#include <util/helper/singleton.h>
-#include <util/glaze_prelude.h>
-#include <util/primitive_aliases.h>
-#include <util/std_aliases.h>
+#include <prelude.h>
+#include <prelude/filesystem.h>
+#include <prelude/containers.h>
 #include <ranges>
+
+#include <util/helper/singleton.h>
 
 namespace data {
     class Manager { DECL_SINGLETON(Manager);
@@ -29,12 +28,10 @@ namespace data {
         static const data::id& mapped_id(uint32);
 
     private:
-        std::map<data::id, TileHandle> _tile_handles;
-        std::map<data::id, ItemHandle> _item_handles;
+        hashmap<data::id, TileHandle> _tile_handles;
+        hashmap<data::id, ItemHandle> _item_handles;
 
         void map_id(const data::id&, uint32);
-
-        std::map<uint32, data::id> _mapped_to_ids;
-        std::map<data::id, uint32> _ids_to_mapped;
+        hashmap<uint32, data::id> _mapped_to_ids; hashmap<data::id, uint32> _ids_to_mapped;
     };
 }

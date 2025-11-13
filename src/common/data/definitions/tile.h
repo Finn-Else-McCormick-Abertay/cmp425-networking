@@ -1,10 +1,6 @@
 #pragma once
 
-#include <util/std_aliases.h>
-#include <util/glaze_prelude.h>
-#include <util/helper/format.h>
-#include <fmt/std.h>
-#include <unordered_map>
+#include <prelude/data_definition.h>
 
 namespace data { namespace definition {
     enum class ModelType{ none, block };

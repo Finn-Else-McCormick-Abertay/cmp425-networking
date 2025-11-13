@@ -1,18 +1,16 @@
 #include "window.h"
 
-#include <optional>
-#include <thread>
+#include <prelude/opt.h>
+#include <alias/thread.h>
 #include <util/vec_convert.h>
+
 #include <input/input_manager.h>
 #include <system/system_manager.h>
 #include <render/render_manager.h>
 
-#include <util/console.h>
-
-using namespace std;
 using sf::Event;
 
-Window::Window(string title, uvec2 size) :
+Window::Window(str title, uvec2 size) :
     _title(title),
     _render_window(
         sf::VideoMode(to_sfvec(size)),
@@ -27,10 +25,8 @@ Window::Window(string title, uvec2 size) :
 
 void Window::enter_loop() {    
     if (!_render_window.setActive(false)) print<error, Window>("Failed to deactivate OpenGL context.");
-    std::thread render_thread = std::thread(&Window::render_thread, this);
-
+    thread render_thread = thread(&Window::render_thread, this);
     process_thread();
-
     render_thread.join();
 }
 
@@ -39,7 +35,7 @@ bool Window::is_open() const { return _render_window.isOpen(); }
 const str& Window::title() const { return _title; }
 void Window::set_title(const str& title) { _title = title; _render_window.setTitle(_title); }
 
-void Window::set_icon(const filesystem::path& path) {
+void Window::set_icon(const filepath& path) {
     if (!filesystem::exists(path)) return print<error, Window>("Could not set icon to non-existent image '{}'.", path);
     sf::Image image;
     if (!image.loadFromFile(path)) return print<error, Window>("Could not set icon to '{}' - file failed to load.", path);
@@ -54,7 +50,7 @@ void Window::process_thread() {
         InputManager::inst().tick();
 
         // Poll input
-        while (const optional event = _render_window.pollEvent()) {
+        while (const opt event = _render_window.pollEvent()) {
             // Send events to the input manager
             if (event) InputManager::inst().receive_event(event.value());
 

@@ -1,13 +1,12 @@
 #pragma once
 #include <typeinfo>
 #include <typeindex>
-#include <map>
-#include <set>
-#include <string>
 
-#include <util/console.h>
-#include <util/vec.h>
 #include <util/helper/singleton.h>
+
+#include <prelude.h>
+#include <prelude/vec.h>
+#include <prelude/containers.h>
 
 #include <input/input_action.h>
 #include <input/actions.h>
@@ -19,7 +18,7 @@ class InputManager { DECL_SINGLETON(InputManager);
     using Action = input_impl::IInputAction;
 
 public:
-    DECL_REGISTRY_WITH_ARGS(Action, std::string name, const std::type_info& value_type, input_impl::ActionDefinition&&);
+    DECL_REGISTRY_WITH_ARGS(Action, str name, const std::type_info& value_type, input_impl::ActionDefinition&&);
     static void init(); // Initialise the manager. Must be called exactly once, at the start of main.
 
     static void bind(Mouse::Axis, Action& action);        static void unbind(Mouse::Axis, Action& action);
@@ -37,14 +36,14 @@ public:
 
 private:
     struct ActionMeta {
-        std::string name; std::type_index value_type; input_impl::ActionDefinition definition;
-        std::set<Action*> simple_dependents; std::set<Action*> complex_dependents;
+        str name; std::type_index value_type; input_impl::ActionDefinition definition;
+        set<Action*> simple_dependents; set<Action*> complex_dependents;
     };
-    std::set<Action*> _actions; std::map<Action*, ActionMeta> _action_meta;
-    std::map<Action*, std::map<Action*, input_impl::ActionModifier>> _complex_dependencies;
+    set<Action*> _actions; bstmap<Action*, ActionMeta> _action_meta;
+    bstmap<Action*, bstmap<Action*, input_impl::ActionModifier>> _complex_dependencies;
 
-    static Action* get_action_by_name(const std::string& name);
-    static const std::string& get_name(Action*);
+    static Action* get_action_by_name(const str& name);
+    static const str& get_name(Action*);
     static const input_impl::ActionDefinition& get_definition(Action*);
     static bool is_dependent(Action*);
 
@@ -60,19 +59,19 @@ private:
     void recalculate_complex_action(Action*);
 
     // Binds
-    std::set<Action*> _bound_mouse;
-    std::map<Mouse::Button, std::set<Action*>> _bound_mouse_buttons;
-    std::map<Mouse::Wheel, std::set<Action*>> _bound_mouse_wheels;
-    std::map<Key, std::set<Action*>> _bound_key_codes;
-    std::map<ScanCode, std::set<Action*>> _bound_scan_codes;
-    std::map<Controller::Button, std::set<Action*>> _bound_controller_buttons;
-    std::map<Controller::Axis, std::set<Action*>> _bound_controller_axes;
+    set<Action*> _bound_mouse;
+    bstmap<Mouse::Button, set<Action*>> _bound_mouse_buttons;
+    bstmap<Mouse::Wheel, set<Action*>> _bound_mouse_wheels;
+    bstmap<Key, set<Action*>> _bound_key_codes;
+    bstmap<ScanCode, set<Action*>> _bound_scan_codes;
+    bstmap<Controller::Button, set<Action*>> _bound_controller_buttons;
+    bstmap<Controller::Axis, set<Action*>> _bound_controller_axes;
     
     friend class Window;
     void receive_event(const sf::Event&); // Called for every input event
     void tick(); // Called at start of frame
     
-    sf::Vector2i _prev_frame_mouse_position;
+    sf::ivec2 _prev_frame_mouse_position;
 
     static constexpr float JOYSTICK_DEADZONE = 0.1f;
 };

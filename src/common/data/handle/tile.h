@@ -1,6 +1,5 @@
 #pragma once
 
-#include <util/std_aliases.h>
 #include <data/namespaced_id.h>
 #include <data/definitions/tile.h>
 

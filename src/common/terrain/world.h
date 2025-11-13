@@ -1,36 +1,35 @@
 #pragma once
 
-#include <terrain/chunk.h>
-#include <optional>
-#include <map>
-#include <vector>
-
 #include <glaze/glaze.hpp>
-#include <util/std_aliases.h>
+#include <prelude.h>
+#include <prelude/opt.h>
+#include <prelude/containers.h>
 
 #include <render/drawable.h>
+#include <terrain/chunk.h>
+
+#include <ranges>
 
 class World : IDrawable {
 public:
     World();
 
-    Chunk* chunk_at(const ivec2& chunk_coords);
-    const Chunk* chunk_at(const ivec2& chunk_coords) const;
-    Chunk* set_chunk(const ivec2& chunk_coords, std::optional<Chunk>&&, bool replace = true);
+    Chunk* chunk_at(const ivec2& chunk_coords); const Chunk* chunk_at(const ivec2& chunk_coords) const;
+    Chunk* set_chunk(const ivec2& chunk_coords, opt<Chunk>&&, bool replace = true);
 
     Chunk* get_or_make_chunk_at(const ivec2& chunk_coords);
 
-    virtual std::vector<uint> draw_layers() const override;
+    virtual dyn_arr<uint> draw_layers() const override;
     #ifdef CLIENT
     virtual void draw(sf::RenderTarget&, uint layer) override;
     #endif
 
 private:
     friend class glz::meta<World>;
-    std::map<ivec2, Chunk> _chunk_map;
+    bstmap<ivec2, Chunk> _chunk_map;
 
-    std::vector<Chunk> get_flattened_chunks() const;
-    void set_chunks_from_flattened(const std::vector<Chunk>&);
+    dyn_arr<Chunk> get_flattened_chunks() const;
+    void set_chunks_from_flattened(const dyn_arr<Chunk>&);
 
 public:
     struct iterator {
@@ -43,8 +42,8 @@ public:
         friend bool operator== (const iterator& a, const iterator& b);
         friend bool operator!= (const iterator& a, const iterator& b);
     private:
-        std::map<ivec2, Chunk>::iterator _internal_it;
-        iterator(std::map<ivec2, Chunk>::iterator);
+        bstmap<ivec2, Chunk>::iterator _internal_it;
+        iterator(bstmap<ivec2, Chunk>::iterator);
         friend class World;
     };
 
@@ -58,8 +57,8 @@ public:
         friend bool operator== (const const_iterator& a, const const_iterator& b);
         friend bool operator!= (const const_iterator& a, const const_iterator& b);
     private:
-        std::map<ivec2, Chunk>::const_iterator _internal_it;
-        const_iterator(std::map<ivec2, Chunk>::const_iterator);
+        bstmap<ivec2, Chunk>::const_iterator _internal_it;
+        const_iterator(bstmap<ivec2, Chunk>::const_iterator);
         friend class World;
     };
 

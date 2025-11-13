@@ -1,9 +1,11 @@
 #pragma once
 #include <typeinfo>
-#include <string>
-#include <util/vec.h>
 #include <concepts>
 #include <functional>
+
+#include <prelude.h>
+#include <prelude/containers.h>
+#include <alias/function.h>
 
 class InputManager;
 
@@ -16,16 +18,16 @@ namespace actions { namespace mod {
 }}
 
 namespace input_impl {
-    using ActionModifier = std::function<fvec2(fvec2)>;
+    using ActionModifier = func<fvec2(fvec2)>;
     struct ComplexDefinitionComponent {
-        std::string name;
+        str name;
         ActionModifier modifier = ActionModifier();
     };
 
     struct ActionDefinition {
         bool is_position = false;
-        std::string value_mirrors = ""; // Simple dependency
-        std::vector<ComplexDefinitionComponent> value_sums = {}; // Complex dependency
+        str value_mirrors = ""; // Simple dependency
+        dyn_arr<ComplexDefinitionComponent> value_sums = {}; // Complex dependency
         ActionModifier modifier = ActionModifier(); // Final post-processing step
     };
 }
@@ -56,8 +58,8 @@ namespace input_impl {
     template<typename TValue>
     class InputAction : public IInputAction {
     public:
-        InputAction(std::string name, ActionDefinition definition = {}) {
-            InputManager::Registry::__register(*this, name, typeid(TValue), std::move(definition));
+        InputAction(str name, ActionDefinition definition = {}) {
+            InputManager::Registry::__register(*this, name, typeid(TValue), move(definition));
         }
         TValue value() const { return _value; }
 

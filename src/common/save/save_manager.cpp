@@ -1,14 +1,12 @@
 #include "save_manager.h"
 
-#include <util/console.h>
+#include <console.h>
 
 #include <glaze/glaze.hpp>
 #include <glaze/json.hpp>
 
 #include <fstream>
-#include <filesystem>
-
-using namespace std;
+#include <alias/filesystem.h>
 
 DEFINE_SINGLETON(SaveManager);
 
@@ -17,12 +15,12 @@ void SaveManager::save(const World& world) {
     if (!result) return print<error, SaveManager>("Could not save world: {}", result.error().custom_error_message);
 
     if (!filesystem::exists("run")) filesystem::create_directory("run");
-    if (auto file = ofstream("run/save.json")) file << result.value();
+    if (auto file = std::ofstream("run/save.json")) file << result.value();
     print<info, SaveManager>("Saved world.");
 }
 
 opt<World> SaveManager::load() {
-    if (auto file = ifstream("run/save.json")) {
+    if (auto file = std::ifstream("run/save.json")) {
         str buf; file >> buf;
 
         World world;

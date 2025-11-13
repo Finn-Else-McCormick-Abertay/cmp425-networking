@@ -1,41 +1,39 @@
 #include "data_manager.h"
 
-#include <util/console.h>
+#include <console.h>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <unordered_map>
 #include <set>
 
-#include <util/glaze_prelude.h>
+#include <glaze/glaze.hpp>
 #include <glaze/json.hpp>
 
 #ifdef CLIENT
 #include <assets/asset_manager.h>
 #endif
 
-using namespace std;
-
 DEFINE_SINGLETON(data::Manager);
 
 namespace data_impl {
     struct Registry {
-        std::unordered_map<str, data::definition::Tile> tiles;
-        std::unordered_map<str, data::definition::Item> items;
+        hashmap<str, data::definition::Tile> tiles;
+        hashmap<str, data::definition::Item> items;
     };
     static_assert(glz::reflectable<Registry>);
 
-    Registry load_namespace(const str& namespace_id, const std::filesystem::path& root) {
+    Registry load_namespace(const str& namespace_id, const filepath& root) {
         Registry existing;
-        for (auto entry : filesystem::directory_iterator(root)) {
+        for (auto entry : dir(root)) {
             if (entry.path().extension().generic_string() == ".json") {
-                auto file = ifstream(entry.path());
+                auto file = std::ifstream(entry.path());
                 if (!file) continue;
                 
-                stringstream buffer;
+                std::stringstream buffer;
                 buffer << file.rdbuf();
 
-                auto result = glz::read_json<Registry>(buffer.str());
+                auto result = glz::read_jsonc<Registry>(buffer.str());
                 if (!result) {
                     print<error, data::Manager>("Error loading from '{}' : {} ({}).",
                         entry.path(), result.error().custom_error_message, (int)result.error().ec);
@@ -57,10 +55,10 @@ void data::Manager::reload() {
     inst()._tile_handles.clear();
     inst()._item_handles.clear();
     inst()._mapped_to_ids.clear(); inst()._ids_to_mapped.clear();
-    std::unordered_map<str, data_impl::Registry> namespaces;
+    hashmap<str, data_impl::Registry> namespaces;
 
     auto data_root = filesystem::relative("resources/data");
-    for (auto& entry : filesystem::directory_iterator(data_root)) {
+    for (auto& entry : dir(data_root)) {
         if (entry.is_directory()) {
             str namespace_id = entry.path().filename().generic_string();
             namespaces[namespace_id] = data_impl::load_namespace(namespace_id, entry);

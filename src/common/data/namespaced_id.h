@@ -1,12 +1,11 @@
 #pragma once
 
-#include <string>
 #include <utility>
-#include <fmt/format.h>
 #include <compare>
+#include <fmt/format.h>
 
 #include <glaze/glaze.hpp>
-#include <util/std_aliases.h>
+#include <prelude.h>
 
 namespace data {
 
@@ -42,13 +41,21 @@ namespace data {
     };
 }
 
+template<> struct std::hash<data::id> {
+    size_t operator()(const data::id& id) const noexcept {
+        size_t h1 = std::hash<str>{}(id.nmspace());
+        size_t h2 = std::hash<str>{}(id.name());
+        return h1 ^ (h2 << 1);
+    }
+};
+
+inline data::id operator ""_id(const char* literal, size_t) { return { str(literal) }; }
+
 template <> struct fmt::formatter<data::id>: formatter<string_view> {
     inline auto format(const data::id& id, format_context& ctx) const {
         return formatter<str>().format(fmt::format("{}::{}", id.nmspace(), id.name()), ctx);
     }
 };
-
-inline data::id operator ""_id(const char* literal, size_t) { return { str(literal) }; }
 
 template<> struct glz::meta<data::id> {
     static constexpr auto read_id = [](data::id& id, str val, glz::context& ctx) {

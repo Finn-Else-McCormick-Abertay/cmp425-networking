@@ -1,7 +1,9 @@
 #pragma once
 
 #include <util/helper/singleton.h>
-#include <util/std_aliases.h>
+
+#include <prelude.h>
+#include <prelude/opt.h>
 
 #include <terrain/world.h>
 

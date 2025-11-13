@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string>
 #include <typeinfo>
 
 class ITickingSystem {

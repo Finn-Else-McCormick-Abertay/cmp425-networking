@@ -2,12 +2,8 @@
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
 
-#include <string>
-#include <functional>
-#include <filesystem>
-
-#include <util/vec.h>
-#include <util/std_aliases.h>
+#include <prelude.h>
+#include <prelude/filesystem.h>
 
 class Window {
 public:

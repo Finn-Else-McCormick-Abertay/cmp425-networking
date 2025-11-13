@@ -1,15 +1,14 @@
 #include "world.h"
 #include <assert.h>
-#include <util/console.h>
+#include <console.h>
 
-using namespace std;
 
 World::World() : _chunk_map(), IDrawable() {}
 
 Chunk* World::chunk_at(const ivec2& chunk_coords) { return _chunk_map.contains(chunk_coords) ? &(_chunk_map.at(chunk_coords)) : nullptr; }
 const Chunk* World::chunk_at(const ivec2& chunk_coords) const { return _chunk_map.contains(chunk_coords) ? &(_chunk_map.at(chunk_coords)) : nullptr; }
 
-Chunk* World::set_chunk(const ivec2& chunk_coords, optional<Chunk>&& chunk, bool replace) {
+Chunk* World::set_chunk(const ivec2& chunk_coords, opt<Chunk>&& chunk, bool replace) {
     if (!replace && chunk_at(chunk_coords)) return chunk_at(chunk_coords);
     if (chunk) {
         _chunk_map[chunk_coords] = move(chunk.value());
@@ -34,18 +33,18 @@ Chunk* World::set_chunk(const ivec2& chunk_coords, optional<Chunk>&& chunk, bool
 
 Chunk* World::get_or_make_chunk_at(const ivec2& chunk_coords) {
     if (auto existing_chunk = chunk_at(chunk_coords)) return existing_chunk;
-    return set_chunk(chunk_coords, make_optional<Chunk>());
+    return set_chunk(chunk_coords, make_opt<Chunk>());
 }
 
 
-std::vector<Chunk> World::get_flattened_chunks() const {
-    std::vector<Chunk> chunks_flat;
+dyn_arr<Chunk> World::get_flattened_chunks() const {
+    dyn_arr<Chunk> chunks_flat;
     for (auto& [pos, chunk] : _chunk_map) if (!chunk.empty()) chunks_flat.push_back(chunk);
     return chunks_flat;
     return {};
 }
-void World::set_chunks_from_flattened(const std::vector<Chunk>& chunks) {
-    for (auto& chunk : chunks) set_chunk(chunk._chunk_coords, make_optional(move(chunk)));
+void World::set_chunks_from_flattened(const dyn_arr<Chunk>& chunks) {
+    for (auto& chunk : chunks) set_chunk(chunk._chunk_coords, make_opt(move(chunk)));
 }
 
 
@@ -59,7 +58,7 @@ World::const_iterator World::cend() const { return World::const_iterator(_chunk_
 
 // Iterators
 
-World::iterator::iterator(std::map<ivec2, Chunk>::iterator it) : _internal_it(it) {}
+World::iterator::iterator(bstmap<ivec2, Chunk>::iterator it) : _internal_it(it) {}
 
 World::iterator::reference World::iterator::operator*() const { return _internal_it->second; }
 World::iterator::pointer World::iterator::operator->() { return &_internal_it->second; }
@@ -71,7 +70,7 @@ bool operator== (const World::iterator& a, const World::iterator& b) { return a.
 bool operator!= (const World::iterator& a, const World::iterator& b) { return a._internal_it != b._internal_it; }
 
 
-World::const_iterator::const_iterator(std::map<ivec2, Chunk>::const_iterator it) : _internal_it(it) {}
+World::const_iterator::const_iterator(bstmap<ivec2, Chunk>::const_iterator it) : _internal_it(it) {}
 
 World::const_iterator::reference World::const_iterator::operator*() const { return _internal_it->second; }
 World::const_iterator::pointer World::const_iterator::operator->() { return &_internal_it->second; }
@@ -84,7 +83,7 @@ bool operator!= (const World::const_iterator& a, const World::const_iterator& b)
 
 
 
-std::vector<uint> World::draw_layers() const { return { layers::TILE_FOREGROUND, layers::TILE_BACKGROUND }; }
+dyn_arr<uint> World::draw_layers() const { return { layers::TILE_FOREGROUND, layers::TILE_BACKGROUND }; }
 
 #ifdef CLIENT
 #include <util/vec_convert.h>
@@ -94,7 +93,7 @@ void World::draw(sf::RenderTarget& target, uint layer) {
     auto chunk_true_size = Chunk::SIZE_TILES * Tile::SIZE;
     
     if (layer == layers::TILE_FOREGROUND) {
-        sf::RectangleShape tile_rect(sf_fvec2(Tile::SIZE, Tile::SIZE));
+        sf::RectangleShape tile_rect(sf::fvec2(Tile::SIZE, Tile::SIZE));
         for (auto& chunk : *this) {
             ivec2 chunk_true_coords(chunk.get_coords() * chunk_true_size);
             // Draw tiles
@@ -115,7 +114,7 @@ void World::draw(sf::RenderTarget& target, uint layer) {
         }
     }
     else if (layer == layers::TILE_BACKGROUND) {
-        auto chunk_debug_rect = sf::RectangleShape(sf_fvec2(chunk_true_size - 2, chunk_true_size - 2));
+        auto chunk_debug_rect = sf::RectangleShape(sf::fvec2(chunk_true_size - 2, chunk_true_size - 2));
         chunk_debug_rect.setOutlineColor(sf::Color(255, 255, 255, 100));
         chunk_debug_rect.setOutlineThickness(1);
         chunk_debug_rect.setFillColor(sf::Color::Transparent);

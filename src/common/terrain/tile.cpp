@@ -3,13 +3,12 @@
 #include <data/data_manager.h>
 #include <exception>
 
-using namespace std;
 
 Tile::Tile(const data::id& id, Shape shape) : _type_id(id), _shape(shape) {}
 
 const data::TileHandle& Tile::type() const {
     auto opt = data::Manager::get_tile(_type_id);
-    if (!opt) throw exception("Attempted to access type handle for tile with invalid type.");
+    if (!opt) throw std::exception("Attempted to access type handle for tile with invalid type.");
     return opt.value();
 }
 
