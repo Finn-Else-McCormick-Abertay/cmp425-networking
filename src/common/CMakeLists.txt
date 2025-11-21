@@ -1,11 +1,9 @@
 
 set(COMMON_SOURCES
-    terrain/tile.cpp
     terrain/chunk.cpp
     terrain/world.cpp
 
     data/data_manager.cpp
-    data/namespaced_id.cpp
     data/handle/handles.cpp
 
     save/save_manager.cpp
@@ -15,7 +13,7 @@ set(COMMON_SOURCES
     system/system_manager.cpp
     system/system.cpp
 
-    console.cpp
+    console/print.cpp
 )
 
 target_sources(${CLIENT_NAME} PRIVATE ${COMMON_SOURCES})

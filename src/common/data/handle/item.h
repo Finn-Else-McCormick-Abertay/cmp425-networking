@@ -9,12 +9,12 @@ namespace data {
 
     class ItemHandle {
     public:
-        ItemHandle(const data::id& id, const definition::Item&);
+        ItemHandle(const id& id, const definition::Item&);
         
-        const data::id& id() const;
+        const id& id() const;
     
     private:
-        data::id _id;
+        ::id _id;
         str _texture_path;
         
         friend class assets::Manager;

@@ -16,17 +16,19 @@ namespace assets {
         static void reload();
         static void on_data_changed();
         
-        static const Texture& get_tile_texture(const data::id&);
-        static const Texture& get_item_texture(const data::id&);
+        static const Texture& get_tile_texture(const id&);
+        static const Texture& get_item_texture(const id&);
 
-        static opt_cref<Texture> try_get_tile_texture(const data::id&);
-        static opt_cref<Texture> try_get_item_texture(const data::id&);
+        static opt_cref<Font> get_font(const id&);
 
     private:
         static opt<Texture> attempt_load_texture(const filepath&);
+        static opt<Font> attempt_load_font(const filepath&);
 
         Texture _placeholder_texture;
-        hashmap<data::id, Texture> _tile_textures;
-        hashmap<data::id, Texture> _item_textures;
+        hashmap<id, Texture> _tile_textures;
+        hashmap<id, Texture> _item_textures;
+
+        hashmap<id, Font> _fonts;
     };
 }

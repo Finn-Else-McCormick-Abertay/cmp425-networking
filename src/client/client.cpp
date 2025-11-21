@@ -14,7 +14,10 @@
 
 #include <terrain/world.h>
 #include <player/interaction_system.h>
+#include <debug/debug_system.h>
 #include <render/camera.h>
+
+#include <alias/bitset.h>
 
 int main() {
     InputManager::init();
@@ -26,6 +29,7 @@ int main() {
 
     auto player_camera = Camera("player");
     auto interaction_system = player::InteractionSystem(&world);
+    auto debug_system = DebugSystem(&world);
 
     Window window;
     window.enter_loop();

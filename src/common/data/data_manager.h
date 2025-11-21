@@ -24,14 +24,14 @@ namespace data {
         static inline auto tile_ids() { return std::views::keys(inst()._tile_handles); }
         static inline auto item_ids() { return std::views::keys(inst()._item_handles); }
 
-        static uint32 id_mapping(const data::id&);
-        static const data::id& mapped_id(uint32);
+        static uint32 id_mapping(const id&);
+        static const id& mapped_id(uint32);
 
     private:
-        hashmap<data::id, TileHandle> _tile_handles;
-        hashmap<data::id, ItemHandle> _item_handles;
+        hashmap<id, TileHandle> _tile_handles;
+        hashmap<id, ItemHandle> _item_handles;
 
-        void map_id(const data::id&, uint32);
-        hashmap<uint32, data::id> _mapped_to_ids; hashmap<data::id, uint32> _ids_to_mapped;
+        void map_id(const id&, uint32);
+        hashmap<uint32, id> _mapped_to_ids; hashmap<id, uint32> _ids_to_mapped;
     };
 }

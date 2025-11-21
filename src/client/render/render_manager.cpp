@@ -20,12 +20,11 @@ void RenderManager::Registry::__unregister(Camera& camera) { inst()._cameras.era
 void RenderManager::render() {
     if (!inst()._target) return;
 
+    if (!inst().ui_camera) inst().ui_camera = Camera("ui", INT_MIN, 600.f);
+
     if (!inst()._added_drawables.empty()) {
         for (auto drawable : inst()._added_drawables) {
-            print<debug, RenderManager>("{} registered on layers {}.",
-                console_impl::clean_type_name(typeid(*drawable).name()),
-                drawable->draw_layers()
-            );
+            //print<debug, RenderManager>("{} registered on layers {}.", console_impl::clean_type_name(typeid(*drawable).name()), drawable->draw_layers());
             for (auto layer : drawable->draw_layers()) inst()._layers[layer].insert(drawable);
         }
         inst()._added_drawables.clear();
@@ -38,9 +37,12 @@ void RenderManager::render() {
     }
 
     inst()._target->clear(sf::Color::Magenta);
-    inst().update_target_view();
-
+    inst().update_target_view(); bool entered_ui_space = false;
     for (auto& [layer, drawables] : inst()._layers) {
+        if (!entered_ui_space && layer >= layers::ui::start) {
+            inst()._target->setView(inst().ui_camera.value().as_view());
+            entered_ui_space = true;
+        }
         for (auto drawable : drawables) drawable->draw(*inst()._target, layer);
     }
 }
@@ -69,5 +71,8 @@ opt_ref<Camera> RenderManager::active_camera() {
     return nullopt;
 }
 
-fvec2 RenderManager::pixel_to_world(const ivec2& pixel) { return to_vec(inst()._target->mapPixelToCoords(to_sfvec(pixel))); }
-ivec2 RenderManager::world_to_pixel(const fvec2& point) { return to_vec(inst()._target->mapCoordsToPixel(to_sfvec(point))); }
+fvec2 RenderManager::pixel_to_world(const ivec2& pixel) { return to_vec(inst()._target->mapPixelToCoords(to_sfvec(pixel), inst()._active_camera ? inst()._active_camera->as_view() : inst()._target->getDefaultView())); }
+ivec2 RenderManager::world_to_pixel(const fvec2& point) { return to_vec(inst()._target->mapCoordsToPixel(to_sfvec(point), inst()._active_camera ? inst()._active_camera->as_view() : inst()._target->getDefaultView())); }
+
+fvec2 RenderManager::pixel_to_ui(const ivec2& pixel) { return to_vec(inst()._target->mapPixelToCoords(to_sfvec(pixel), inst().ui_camera.value().as_view())); }
+ivec2 RenderManager::ui_to_pixel(const fvec2& point) { return to_vec(inst()._target->mapCoordsToPixel(to_sfvec(point), inst().ui_camera.value().as_view())); }

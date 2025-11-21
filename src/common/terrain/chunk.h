@@ -1,23 +1,56 @@
 #pragma once
 
 #include <functional>
-#include <terrain/tile.h>
+#include <ranges>
+#include <terrain/tile_shape.h>
+#include <data/handle/tile.h>
+#include <data/namespaced_id.h>
+#include <render/drawable.h>
+#include <alias/bitset.h>
 
 #include <glaze/glaze.hpp>
 #include <prelude.h>
 #include <prelude/vec.h>
+#include <prelude/opt.h>
 #include <prelude/containers.h>
 
+static constexpr uint TILE_SIZE = 8;
 class Chunk {
+public:  static constexpr uint SIZE_TILES = 16;
+private: static constexpr uint TILE_COUNT = SIZE_TILES * SIZE_TILES;
 public:
-    static constexpr uint SIZE_TILES = 16;
-
     Chunk(); Chunk(const Chunk&); Chunk(Chunk&&);
     const ivec2& get_coords() const;
 
-    Tile* tile_at(const uvec2& pos);
-    const Tile* tile_at(const uvec2& pos) const;
-    bool set_tile_at(const uvec2& pos, Tile, bool update = true);
+    class Layer {
+    public:
+        Layer(Chunk* = nullptr, draw_layer = 0);
+
+        const id& tile_at(const uvec2& pos) const;
+        bool set_tile_at(const uvec2& pos, const id&);
+
+        TileShape shape_at(const uvec2& pos) const;
+        
+        bitset<8> find_connections_at(const uvec2& pos) const;
+
+        bool empty() const;
+    private:
+        friend class World; friend class Chunk;
+        friend class glz::meta<Chunk::Layer>; friend class glz::meta<Chunk>;
+        void update_shape_of(const uvec2& pos);
+
+        arr<id, TILE_COUNT> _tiles;
+        arr<TileShape, TILE_COUNT> _shapes;
+
+        draw_layer _layer;
+        Chunk* _owner;
+    };
+
+    Layer& operator[](draw_layer layer); const Layer& operator[](draw_layer layer) const;
+    Layer& at(draw_layer layer); const Layer& at(draw_layer layer) const;
+    bool has(draw_layer layer) const;
+
+    inline auto layers() const { return _layers | std::views::keys; }
 
     bool empty() const;
 
@@ -25,58 +58,30 @@ public:
     Chunk& operator=(Chunk&&);
 
 private:
-    friend class World; friend class glz::meta<Chunk>; friend class glz::meta<World>;
     ivec2 _chunk_coords; bstmap<ivec2, Chunk*> _neighbours; // Set by containing world
     Chunk* get_chunk_neighbour(const ivec2&);
     void set_chunk_neighbour(const ivec2&, Chunk*, bool recursive = true);
-    void update_shapes_along_neighbour_border(const ivec2&, bool neighbour_only = false);
 
+    void update_all_layer_shapes_at(const uvec2& pos);
+    void update_shapes_along_neighbour_border(const ivec2&, bool neighbour_only = false);
+    
     static bool is_in_range(const uvec2& pos); 
     static bool is_in_range(size_t);
     static size_t index_from_coords(const uvec2& pos);
     static uvec2 coords_from_index(size_t);
 
-    using tile_arr = arr<Tile, SIZE_TILES * SIZE_TILES>;
-    tile_arr _tiles;
+    friend class World;
+    friend class glz::meta<Chunk>; friend class glz::meta<Chunk::Layer>; friend class glz::meta<World>;
 
-    arr<data::id, SIZE_TILES * SIZE_TILES> get_tile_ids() const;
-    void set_tiles_from_ids(const arr<data::id, SIZE_TILES * SIZE_TILES>&);
+    bstmap<draw_layer, Layer> _layers;
+};
 
-    void update_shape_of(const uvec2& pos);
-
-public:
-    struct iterator {
-        using difference_type = std::ptrdiff_t;
-        using return_pair = std::pair<const uvec2, Tile*>;
-
-        return_pair operator*() const;
-        iterator& operator++();         iterator operator++(int);
-        
-        friend bool operator== (const iterator& a, const iterator& b);
-        friend bool operator!= (const iterator& a, const iterator& b);
-    private:
-        tile_arr* _arr; size_t _i;
-        iterator(tile_arr& array, size_t index);
-        friend class Chunk;
+template<> struct glz::meta<Chunk::Layer> {
+    static constexpr auto set_tiles = [](Chunk::Layer& layer, const ::arr<id, Chunk::TILE_COUNT>& vals) {
+        layer._tiles = vals;
+        for (uint i = 0; i < Chunk::TILE_COUNT; ++i) layer.update_shape_of(Chunk::coords_from_index(i));
     };
-
-    struct const_iterator {
-        using difference_type = std::ptrdiff_t;
-        using return_pair = std::pair<const uvec2, const Tile*>;
-
-        return_pair operator*() const;
-        const_iterator& operator++();           const_iterator operator++(int);
-        
-        friend bool operator== (const const_iterator& a, const const_iterator& b);
-        friend bool operator!= (const const_iterator& a, const const_iterator& b);
-    private:
-        const tile_arr* _arr; size_t _i;
-        const_iterator(const tile_arr& array, size_t index);
-        friend class Chunk;
-    };
-
-    iterator begin();   const_iterator cbegin() const;
-    iterator end();     const_iterator cend() const;
+    static constexpr auto value { custom<set_tiles, &Chunk::Layer::_tiles> };
 };
 
 template<> struct glz::meta<Chunk> {
@@ -87,8 +92,13 @@ template<> struct glz::meta<Chunk> {
         return ::arr<int, 2> { chunk._chunk_coords.x, chunk._chunk_coords.y };
     };
 
+    static constexpr auto set_layers = [](Chunk& chunk, const bstmap<draw_layer, Chunk::Layer>& layers) {
+        chunk._layers = layers;
+        for (auto& [i, layer] : chunk._layers) layer._owner = &chunk;
+    };
+
     static constexpr auto value = object(
         "chunk_coords", custom<set_chunk_coords, get_chunk_coords>,
-        "tiles", custom<&Chunk::set_tiles_from_ids, &Chunk::get_tile_ids>
+        "layers", custom<set_layers, &Chunk::_layers>
     );
 };

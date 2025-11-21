@@ -6,7 +6,7 @@
 
 class Camera {
 public:
-    Camera(str identifier, int priority = 0);
+    Camera(str identifier, int priority = 0, float size = 300.f);
     virtual ~Camera();
 
     const fvec2& position() const;
@@ -17,5 +17,5 @@ public:
 
 private:
     str _identifier; int _priority;
-    fvec2 _position; float _size = 300.f;
+    fvec2 _position; float _size;
 };

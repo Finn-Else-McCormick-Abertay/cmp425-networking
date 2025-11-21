@@ -1,7 +1,7 @@
 #include "tile.h"
 #include "item.h"
 
-data::TileHandle::TileHandle(const data::id& id, const definition::Tile& tile_def) : _id(id) {
+data::TileHandle::TileHandle(const ::id& id, const definition::Tile& tile_def) : _id(id) {
 
     if (holds_alternative<str>(tile_def.model)) { _model_type = ModelType::Custom; _model_path = get<str>(tile_def.model); }
     else {
@@ -15,7 +15,7 @@ data::TileHandle::TileHandle(const data::id& id, const definition::Tile& tile_de
     if (tile_def.texture) _texture_path = tile_def.texture.value();
     else if (_model_type == ModelType::Block) _texture_path = "tileset/" + _id.name();
 }
-const data::id& data::TileHandle::id() const { return _id; }
+const id& data::TileHandle::id() const { return _id; }
 
 data::TileHandle::ModelType data::TileHandle::model_type() const { return _model_type; }
 
@@ -23,10 +23,10 @@ data::TileHandle::ModelType data::TileHandle::model_type() const { return _model
 
 
 
-data::ItemHandle::ItemHandle(const data::id& id, const definition::Item& item_def) : _id(id) {
+data::ItemHandle::ItemHandle(const ::id& id, const definition::Item& item_def) : _id(id) {
 
     if (item_def.texture) _texture_path = item_def.texture.value();
     else _texture_path = "item/" + _id.name();
 
 }
-const data::id& data::ItemHandle::id() const { return _id; }
+const id& data::ItemHandle::id() const { return _id; }

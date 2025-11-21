@@ -20,6 +20,9 @@ public:
 
     static fvec2 pixel_to_world(const ivec2&);
     static ivec2 world_to_pixel(const fvec2&);
+    
+    static fvec2 pixel_to_ui(const ivec2&);
+    static ivec2 ui_to_pixel(const fvec2&);
 
 private:
     friend class Camera; friend class Window;
@@ -30,6 +33,8 @@ private:
     set<Camera*> _cameras; Camera* _active_camera;
     void on_camera_order_changed();
     void update_target_view();
+
+    opt<Camera> ui_camera;
 
     sf::RenderTarget* _target; float _aspect = 1.f;
     static void set_target(sf::RenderTarget*);

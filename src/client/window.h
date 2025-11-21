@@ -4,6 +4,7 @@
 
 #include <prelude.h>
 #include <prelude/filesystem.h>
+#include <alias/chrono.h>
 
 class Window {
 public:
@@ -20,6 +21,9 @@ public:
     void set_icon(const std::filesystem::path&);
 
     void enter_loop();
+
+    // 60 physics steps per second
+    static constexpr chrono::microseconds FIXED_TIMESTEP = 160ms;
 
 private:
     sf::RenderWindow _render_window;

@@ -3,7 +3,8 @@
 #include <render/render_manager.h>
 
 
-Camera::Camera(str identifier, int priority) : _identifier(identifier), _priority(priority) { RenderManager::Registry::__register(*this); }
+Camera::Camera(str identifier, int priority, float size)
+: _identifier(identifier), _priority(priority), _size(size) { RenderManager::Registry::__register(*this); }
 Camera::~Camera() { RenderManager::Registry::__unregister(*this); }
 
 const str& Camera::identifier() const { return _identifier; }

@@ -20,7 +20,7 @@ Window::Window(str title, uvec2 size) :
         {} // OpenGL context settings
     ) {
     RenderManager::set_target(&_render_window);
-    set_icon("assets/textures/placeholder.png");
+    set_icon("resources/assets/textures/placeholder.png");
 }
 
 void Window::enter_loop() {    
@@ -43,8 +43,8 @@ void Window::set_icon(const filepath& path) {
 }
 
 void Window::process_thread() {
-    //print<info, Window>("Launching process thread.");
     sf::Clock frame_clock;
+    chrono::microseconds physics_tick_remainder = chrono::microseconds::zero();
     while (is_open()) {
         // Tick InputManager (for handling stuff like 'just pressed')
         InputManager::inst().tick();
@@ -64,11 +64,19 @@ void Window::process_thread() {
         // Tick systems
         sf::Time delta_time = frame_clock.restart();
         SystemManager::tick(delta_time.asSeconds());
+
+        // Tick physics
+        auto physics_delta_time = delta_time.toDuration() + physics_tick_remainder;
+        uint physics_steps = physics_delta_time / FIXED_TIMESTEP;
+        physics_tick_remainder = physics_delta_time % FIXED_TIMESTEP;
+
+        for (uint i = 0; i < physics_steps; ++i) {
+            // Do physics steps
+        }
     }
 }
 
 void Window::render_thread() {
-    //print<info, Window>("Launching render thread.");
     if (!_render_window.setActive(true)) print<error, Window>("Could not activate OpenGL context on render thread.");
     
     RenderManager::set_target(&_render_window);

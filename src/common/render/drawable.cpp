@@ -24,4 +24,4 @@ IDrawable::IDrawable(IDrawable&&) {}
 
 #endif
 
-dyn_arr<uint> IDrawable::draw_layers() const { return { layers::DEFAULT }; }
+dyn_arr<draw_layer> IDrawable::draw_layers() const { return { layers::unknown }; }

@@ -19,9 +19,9 @@ public:
 
     Chunk* get_or_make_chunk_at(const ivec2& chunk_coords);
 
-    virtual dyn_arr<uint> draw_layers() const override;
+    virtual dyn_arr<draw_layer> draw_layers() const override;
     #ifdef CLIENT
-    virtual void draw(sf::RenderTarget&, uint layer) override;
+    virtual void draw(sf::RenderTarget&, draw_layer layer) override;
     #endif
 
 private:

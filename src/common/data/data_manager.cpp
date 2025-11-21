@@ -65,7 +65,7 @@ void data::Manager::reload() {
         }
     }
     
-    set<data::id> ordered_ids;
+    set<id> ordered_ids;
 
     for (auto& [nmspace, reg] : namespaces) {
         for (auto& [name, tile_def] : reg.tiles) {
@@ -84,7 +84,7 @@ void data::Manager::reload() {
     uint32 used_mappings = 0;
     for (auto& id : ordered_ids) { inst().map_id(id, used_mappings); ++used_mappings; }
 
-    print<success, Manager>("Data reloaded.");
+    print<success, Manager>("Created id mappings.");
     #ifdef CLIENT
     assets::Manager::on_data_changed();
     #endif
@@ -102,11 +102,11 @@ opt_cref<data::ItemHandle> data::Manager::get_item(const id& id) {
     return nullopt;
 }
 
-uint32 data::Manager::id_mapping(const data::id& id) { return inst()._ids_to_mapped.at(id); }
+uint32 data::Manager::id_mapping(const id& id) { return inst()._ids_to_mapped.at(id); }
 
-const data::id& data::Manager::mapped_id(uint32 mapped) { return inst()._mapped_to_ids.at(mapped); }
+const id& data::Manager::mapped_id(uint32 mapped) { return inst()._mapped_to_ids.at(mapped); }
 
-void data::Manager::map_id(const data::id& id, uint32 mapped) {
+void data::Manager::map_id(const id& id, uint32 mapped) {
     _mapped_to_ids[mapped] = id;
     _ids_to_mapped[id] = mapped;
 }
