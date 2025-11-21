@@ -19,6 +19,7 @@ Window::Window(str title, uvec2 size) :
         sf::State::Windowed, // Windowed vs fullscreen
         {} // OpenGL context settings
     ) {
+    _open = true;
     RenderManager::set_target(&_render_window);
     set_icon("resources/assets/textures/placeholder.png");
 }
@@ -30,7 +31,7 @@ void Window::enter_loop() {
     render_thread.join();
 }
 
-bool Window::is_open() const { return _render_window.isOpen(); }
+bool Window::is_open() const { return _open; }
 
 const str& Window::title() const { return _title; }
 void Window::set_title(const str& title) { _title = title; _render_window.setTitle(_title); }
@@ -55,7 +56,7 @@ void Window::process_thread() {
             if (event) InputManager::inst().receive_event(event.value());
 
             // Handle close requests (currently just closes, should trigger save logic / are you sure dialog)
-            if (event->is<Event::Closed>()) _render_window.close();
+            if (event->is<Event::Closed>()) _open = false;
 
             // Update camera aspects on resize
             else if (event->is<Event::Resized>()) RenderManager::set_target(&_render_window);
@@ -88,5 +89,5 @@ void Window::render_thread() {
         RenderManager::render();
         _render_window.display();
     }
-
+    _render_window.close();
 }

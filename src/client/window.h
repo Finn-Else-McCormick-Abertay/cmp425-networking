@@ -27,7 +27,7 @@ public:
 
 private:
     sf::RenderWindow _render_window;
-    str _title;
+    str _title; bool _open;
 
     void process_thread();
     void render_thread();
