@@ -71,7 +71,7 @@ FetchContent_MakeAvailable(vmath.hpp)
 
 # Glaze
 FetchContent_Declare(glaze
-  GIT_REPOSITORY https://github.com/stephenberry/glaze.git GIT_TAG main
+  GIT_REPOSITORY https://github.com/stephenberry/glaze.git GIT_TAG f2ffb15
   GIT_SHALLOW TRUE EXCLUDE_FROM_ALL SYSTEM
 )
 FetchContent_MakeAvailable(glaze)
@@ -88,6 +88,7 @@ FetchContent_MakeAvailable(sparse_map)
 
 set(COMMON_DEPS SFML::System SFML::Network fmt::fmt vmath.hpp glaze::glaze tsl::sparse_map #[[box2cpp quadtree]])
 set(CLIENT_DEPS SFML::Graphics SFML::Window SFML::Audio)
+set(SERVER_DEPS SFML::Window)
 
 set(COMMON_COMPILE_DEFINITIONS $<$<CONFIG:Debug>:DEBUG> $<$<CONFIG:Release>:RELEASE>)
 set(COMMON_COMPILE_OPTIONS $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor> $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:-mpopcnt>)
@@ -106,7 +107,7 @@ set(SERVER_NAME ${PROJECT_NAME}_server)
 add_executable(${SERVER_NAME})
 target_compile_features(${SERVER_NAME} PUBLIC cxx_std_23)
 target_compile_options(${SERVER_NAME} PRIVATE ${COMMON_COMPILE_OPTIONS})
-target_link_libraries(${SERVER_NAME} PRIVATE ${COMMON_DEPS})
+target_link_libraries(${SERVER_NAME} PRIVATE ${COMMON_DEPS} ${SERVER_DEPS})
 target_include_directories(${SERVER_NAME} PRIVATE src/server/ src/common/ src/util/)
 target_compile_definitions(${SERVER_NAME} PRIVATE SERVER ${COMMON_COMPILE_DEFINITIONS})
 

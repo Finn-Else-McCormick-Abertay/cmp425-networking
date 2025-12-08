@@ -1,5 +1,10 @@
 
 set(COMMON_SOURCES
+    game_loop.cpp
+
+    network/network_manager.cpp
+    network/networked.cpp
+
     terrain/chunk.cpp
     terrain/world.cpp
 

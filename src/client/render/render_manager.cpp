@@ -50,7 +50,6 @@ void RenderManager::render() {
 void RenderManager::on_camera_order_changed() {
     Camera* active_camera_prev = _active_camera; _active_camera = nullptr;
     for (auto camera : _cameras) if (!_active_camera || camera->priority() > _active_camera->priority()) _active_camera = camera;
-    //update_target_view();
 
     if (_active_camera && _active_camera != active_camera_prev)
         print<debug, RenderManager>("Camera switched to '{}'", _active_camera->identifier());
@@ -62,6 +61,7 @@ void RenderManager::update_target_view() {
 
 void RenderManager::set_target(sf::RenderTarget* target) {
     inst()._target = target;
+    if (!target) return;
     auto target_size = target->getSize();
     inst()._aspect = (float)target_size.y / target_size.x;
 }

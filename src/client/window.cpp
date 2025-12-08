@@ -8,6 +8,8 @@
 #include <system/system_manager.h>
 #include <render/render_manager.h>
 
+#include <game_loop.h>
+
 using sf::Event;
 
 Window::Window(str title, uvec2 size) :
@@ -44,8 +46,7 @@ void Window::set_icon(const filepath& path) {
 }
 
 void Window::process_thread() {
-    sf::Clock frame_clock;
-    chrono::microseconds physics_tick_remainder = chrono::microseconds::zero();
+    GameLoop game_loop;
     while (is_open()) {
         // Tick InputManager (for handling stuff like 'just pressed')
         InputManager::inst().tick();
@@ -62,18 +63,7 @@ void Window::process_thread() {
             else if (event->is<Event::Resized>()) RenderManager::set_target(&_render_window);
         }
 
-        // Tick systems
-        sf::Time delta_time = frame_clock.restart();
-        SystemManager::tick(delta_time.asSeconds());
-
-        // Tick physics
-        auto physics_delta_time = delta_time.toDuration() + physics_tick_remainder;
-        uint physics_steps = physics_delta_time / FIXED_TIMESTEP;
-        physics_tick_remainder = physics_delta_time % FIXED_TIMESTEP;
-
-        for (uint i = 0; i < physics_steps; ++i) {
-            // Do physics steps
-        }
+        game_loop.tick();
     }
 }
 

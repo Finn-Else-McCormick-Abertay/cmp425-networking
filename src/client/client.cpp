@@ -11,6 +11,7 @@
 #include <data/data_manager.h>
 #include <assets/asset_manager.h>
 #include <save/save_manager.h>
+#include <network/network_manager.h>
 
 #include <terrain/world.h>
 #include <player/interaction_system.h>
@@ -25,6 +26,8 @@ int main() {
 
     data::Manager::reload();
     
+    NetworkManager::set_server_address(sf::IpAddress::LocalHost);
+    NetworkManager::connect(NetworkManager::CLIENT_PORT);
     World world = SaveManager::load().or_else([](){ return make_opt<World>(); }).value();
 
     auto player_camera = Camera("player");
@@ -35,4 +38,6 @@ int main() {
     window.enter_loop();
     
     SaveManager::save(world);
+
+    NetworkManager::disconnect();
 }

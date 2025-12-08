@@ -1,11 +1,34 @@
-#include <iostream>
+#include <prelude.h>
+
+#include <data/data_manager.h>
+#include <save/save_manager.h>
+#include <network/network_manager.h>
 
 #include <terrain/world.h>
-#include <console.h>
 
+#include <game_loop.h>
 
-int main() {    
-    //b2::World w(b2::World::Params{});
+#include <SFML/Window.hpp>
+#include <alias/opt.h>
 
-    auto world = World();
+int main() {
+    data::Manager::reload();
+
+    World world = SaveManager::load().or_else([](){ return make_opt<World>(); }).value();
+
+    NetworkManager::connect(NetworkManager::SERVER_PORT);
+
+    // Temp window so closing works properly. Should really have a CLI so it can run headless
+    sf::Window window = sf::Window(sf::VideoMode(sf::Vector2u(200, 100)), "Server", sf::State::Windowed);
+
+    GameLoop game_loop;
+    while (window.isOpen()) {
+        window.handleEvents([&window](sf::Event::Closed event){ window.close(); });
+
+        game_loop.tick();
+    }
+    
+    SaveManager::save(world);
+
+    NetworkManager::disconnect();
 }

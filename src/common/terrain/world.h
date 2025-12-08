@@ -6,13 +6,19 @@
 #include <prelude/containers.h>
 
 #include <render/drawable.h>
+#include <network/networked.h>
 #include <terrain/chunk.h>
+#include <data/namespaced_id.h>
 
 #include <ranges>
 
-class World : IDrawable {
+class World : IDrawable, INetworked {
 public:
-    World();
+    World(id, int32 seed);
+    World(id = "default::world"_id);
+
+    id type_id() const;
+    int32 seed() const;
 
     Chunk* chunk_at(const ivec2& chunk_coords); const Chunk* chunk_at(const ivec2& chunk_coords) const;
     Chunk* set_chunk(const ivec2& chunk_coords, opt<Chunk>&&, bool replace = true);
@@ -23,8 +29,16 @@ public:
     #ifdef CLIENT
     virtual void draw(sf::RenderTarget&, draw_layer layer) override;
     #endif
+    
+    virtual str network_id() const override;
+    virtual opt<LogicalPacket> write_message() const override;
+    virtual opt<LogicalPacket> resend_message(str, uint64) const override;
+    virtual void read_message(LogicalPacket&&) override;
 
 private:
+    id _world_type_id;
+    int32 _world_seed;
+
     friend class glz::meta<World>;
     bstmap<ivec2, Chunk> _chunk_map;
 
@@ -70,6 +84,8 @@ public:
 
 template<> struct glz::meta<World> {
     static constexpr auto value = object(
+        "id", &World::_world_type_id,
+        "seed", &World::_world_seed,
         "chunks", glz::custom<&World::set_chunks_from_flattened, &World::get_flattened_chunks>
     );
 };
