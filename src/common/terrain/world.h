@@ -30,9 +30,7 @@ public:
     virtual void draw(sf::RenderTarget&, draw_layer layer) override;
     #endif
     
-    virtual str network_id() const override;
-    virtual opt<LogicalPacket> write_message() const override;
-    virtual opt<LogicalPacket> resend_message(str, uint64) const override;
+    virtual dyn_arr<LogicalPacket> write_messages() const override;
     virtual void read_message(LogicalPacket&&) override;
 
 private:

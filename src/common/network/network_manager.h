@@ -1,6 +1,7 @@
 #pragma once
 
 #include <prelude.h>
+#include <prelude/opt.h>
 #include <prelude/containers.h>
 #include <util/helper/singleton.h>
 #include <alias/chrono.h>
@@ -11,30 +12,30 @@
 
 class NetworkManager { DECL_SINGLETON(NetworkManager);
 public:
+    static constexpr uint16 PORT = 5300;
+
+    ~NetworkManager();
     DECL_REGISTRY(INetworked);
 
-    static bool connect(uint16 port);
-    static void disconnect();
+    static bool connect_listener();
+    static bool connect(const sf::IpAddress&, sf::Time timeout = 1s);
 
-    static void set_server_address(const sf::IpAddress&);
+    static bool disconnect_listener();
+    static bool disconnect(const sf::IpAddress&);
+    static void disconnect_all();
 
     static void network_tick(uint64 elapsed_ticks);
-    
-    static constexpr uint16 CLIENT_PORT = 5300;
-    static constexpr uint16 SERVER_PORT = 5301;
+
+    static str debug_message();
 
 private:
     set<INetworked*> _networked;
+    hashmap<str, INetworked*> _networked_by_id;
 
-    sf::UdpSocket _socket;
-    opt<sf::IpAddress> _server_address; bool _has_server_acknowledged = false;
-    set<sf::IpAddress> _send_addresses;
-    set<sf::IpAddress> _addresses_to_acknowledge;
+    opt<sf::TcpListener> _listener;
+    bstmap<sf::IpAddress, sf::TcpSocket> _sockets;
 
-    //dyn_arr<pair<str, LogicalPacket>> _remaining_packets;
-
-    static bool is_authority();
-
-    bool send_packet(sf::Packet&);
+    bool send_packet(sf::Packet&, sf::TcpSocket&);
     bool send_packet(sf::Packet&, const sf::IpAddress&);
+    bool send_packet(sf::Packet&);
 };

@@ -55,7 +55,9 @@ void InputManager::recalculate_complex_action(Action* action) {
 }
 
 void InputManager::setup_default_binds() {
-    bind(Key::F3, actions::toggle_debug);
+    bind(Key::F3, actions::debug::modifier);
+    bind(Key::T, actions::debug::tile);
+    bind(Key::N, actions::debug::network);
 
     bind(Mouse::Motion, actions::cursor);
     bind(Mouse::Button::Left, actions::click);

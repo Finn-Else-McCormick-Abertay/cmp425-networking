@@ -1,33 +1,32 @@
 #pragma once
 
 #include <prelude.h>
-#include <prelude/opt.h>
+#include <prelude/containers.h>
 #include <data/namespaced_id.h>
 
 #include <SFML/Network/Packet.hpp>
 
-enum class PacketPriority {
-    SINGLE_SEND,
-    REQUIRE_CONFIRMATION
-};
-
 struct LogicalPacket {
     str packet_id;
-    PacketPriority priority;
     sf::Packet packet;
-
-    LogicalPacket(str, PacketPriority, sf::Packet&&);
+    
+    LogicalPacket(str, sf::Packet&&);
 };
 
 class INetworked {
 public:
-    INetworked();
+    INetworked(str network_id);
+    INetworked(INetworked&&);
     virtual ~INetworked();
 
-    virtual str network_id() const = 0;
+    str network_id() const;
 
-    virtual opt<LogicalPacket> write_message() const = 0;
-    virtual opt<LogicalPacket> resend_message(str, uint64) const;
-
+    virtual dyn_arr<LogicalPacket> write_messages() const = 0;
     virtual void read_message(LogicalPacket&&) = 0;
+
+protected:
+    void set_network_id(const str&);
+
+private:
+    str _network_id; bool _invalidated = false;
 };

@@ -132,4 +132,6 @@
     "C_Cpp.vcpkg.enabled": false,
     "explorer.sortOrder": "mixed",
     "explorer.sortOrderLexicographicOptions": "upper",
+    "git.ignoreSubmodules": true,
+    "git.detectSubmodules": false,
 }

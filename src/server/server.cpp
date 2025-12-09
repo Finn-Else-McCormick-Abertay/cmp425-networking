@@ -12,11 +12,13 @@
 #include <alias/opt.h>
 
 int main() {
+    print<info>("Server init.");
+
     data::Manager::reload();
 
     World world = SaveManager::load().or_else([](){ return make_opt<World>(); }).value();
 
-    NetworkManager::connect(NetworkManager::SERVER_PORT);
+    NetworkManager::connect_listener();
 
     // Temp window so closing works properly. Should really have a CLI so it can run headless
     sf::Window window = sf::Window(sf::VideoMode(sf::Vector2u(200, 100)), "Server", sf::State::Windowed);
@@ -29,6 +31,4 @@ int main() {
     }
     
     SaveManager::save(world);
-
-    NetworkManager::disconnect();
 }

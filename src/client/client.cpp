@@ -21,13 +21,16 @@
 #include <alias/bitset.h>
 
 int main() {
+    print<info>("Client init.");
+
     InputManager::init();
     InputManager::setup_default_binds();
 
     data::Manager::reload();
+
+    bool connected = false;
+    while (!connected) connected = NetworkManager::connect(sf::IpAddress::LocalHost, 5s);
     
-    NetworkManager::set_server_address(sf::IpAddress::LocalHost);
-    NetworkManager::connect(NetworkManager::CLIENT_PORT);
     World world = SaveManager::load().or_else([](){ return make_opt<World>(); }).value();
 
     auto player_camera = Camera("player");
@@ -38,6 +41,4 @@ int main() {
     window.enter_loop();
     
     SaveManager::save(world);
-
-    NetworkManager::disconnect();
 }

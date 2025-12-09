@@ -8,26 +8,26 @@
 
 #include <prelude/format.h>
 
-World::World(id id, int32 seed) : _world_type_id(id), _world_seed(seed), _chunk_map(), IDrawable() {}
+World::World(id id, int32 seed)
+    : _world_type_id(id), _world_seed(seed), _chunk_map(), IDrawable(),
+      INetworked(fmt::format("world!{}!{}", id, seed)) {}
 World::World(id id) : World(id, 0) {}
 
 id World::type_id() const { return _world_type_id; }
 
 int32 World::seed() const { return _world_seed; }
 
-str World::network_id() const { return fmt::format("world!{}!{}", type_id(), seed()); }
+dyn_arr<LogicalPacket> World::write_messages() const {
+    dyn_arr<LogicalPacket> messages;
 
-opt<LogicalPacket> World::write_message() const {
     sf::Packet packet;
-    return make_opt(LogicalPacket("TEST", PacketPriority::SINGLE_SEND, move(packet)));
-}
+    messages.emplace_back("TEST", move(packet));
 
-opt<LogicalPacket> World::resend_message(str id, uint64 message_tick) const {
-    return nullopt;
+    return messages;
 }
 
 void World::read_message(LogicalPacket&& packet) {
-    print<info, World>("Recieved message. id: {}", packet.packet_id);
+    //print<info, World>("Recieved message. id: {}", packet.packet_id);
 }
 
 Chunk* World::chunk_at(const ivec2& chunk_coords) { return _chunk_map.contains(chunk_coords) ? &(_chunk_map.at(chunk_coords)) : nullptr; }

@@ -15,5 +15,6 @@ public:
 private:
     World* _world;
 
-    bool _show_debug = false;
+    bool _show_tile_debug = false;
+    bool _show_network_debug = false;
 };

@@ -17,6 +17,7 @@ public:
     static void render();
 
     static opt_ref<Camera> active_camera();
+    static opt_ref<Camera> ui_camera();
 
     static fvec2 pixel_to_world(const ivec2&);
     static ivec2 world_to_pixel(const fvec2&);
@@ -34,7 +35,7 @@ private:
     void on_camera_order_changed();
     void update_target_view();
 
-    opt<Camera> ui_camera;
+    opt<Camera> _ui_camera;
 
     sf::RenderTarget* _target; float _aspect = 1.f;
     static void set_target(sf::RenderTarget*);
