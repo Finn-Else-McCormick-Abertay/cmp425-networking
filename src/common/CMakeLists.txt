@@ -2,6 +2,7 @@
 set(COMMON_SOURCES
     game_loop.cpp
 
+    network/packet.cpp
     network/network_manager.cpp
     network/networked.cpp
 

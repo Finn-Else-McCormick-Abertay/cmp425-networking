@@ -13,7 +13,6 @@
 class NetworkManager { DECL_SINGLETON(NetworkManager);
 public:
     static constexpr uint16 PORT = 5300;
-
     ~NetworkManager();
     DECL_REGISTRY(INetworked);
 

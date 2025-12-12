@@ -7,27 +7,73 @@
 #include <data/data_manager.h>
 
 #include <prelude/format.h>
+#include <alias/ranges.h>
 
-World::World(id id, int32 seed)
-    : _world_type_id(id), _world_seed(seed), _chunk_map(), IDrawable(),
-      INetworked(fmt::format("world!{}!{}", id, seed)) {}
-World::World(id id) : World(id, 0) {}
+#include <glaze/glaze.hpp>
+#include <glaze/json.hpp>
 
-id World::type_id() const { return _world_type_id; }
+World::World(const ::id& id, int32 seed) : _world_id(id), _world_seed(seed), _chunk_map(), IDrawable(), INetworked(calculate_network_id(id, seed)) {}
+World::World(const ::id& id) : World(id, 0) {}
 
+str World::calculate_network_id(const ::id& id, int32 seed) { return fmt::format("world!{}!{}", id, seed); }
+
+const id& World::id() const { return _world_id; }
 int32 World::seed() const { return _world_seed; }
 
-dyn_arr<LogicalPacket> World::write_messages() const {
+void World::set_id(const ::id& id) { _world_id = id; set_network_id(calculate_network_id(_world_id, _world_seed)); }
+void World::set_seed(int32 seed) { _world_seed = seed; set_network_id(calculate_network_id(_world_id, _world_seed)); }
+
+void World::write_chunk_to_packet(const ivec2& chunk_coords, sf::Packet& packet) const {
+    if (auto chunk = chunk_at(chunk_coords)) {
+        auto result = glz::write_json(*chunk);
+        if (!result) print<error, World>("Failed to serialise chunk at [{}].", fmt::join(chunk_coords, ", "));
+        packet << result.value_or("null");
+    }
+    else packet << "null";
+}
+
+dyn_arr<LogicalPacket> World::get_outstanding_messages() const {
     dyn_arr<LogicalPacket> messages;
-
-    sf::Packet packet;
-    messages.emplace_back("TEST", move(packet));
-
     return messages;
 }
 
-void World::read_message(LogicalPacket&& packet) {
-    //print<info, World>("Recieved message. id: {}", packet.packet_id);
+result<LogicalPacket, str> World::get_requested_message(const PacketId& id) const {
+    if (id.type == "chunk") {
+        LogicalPacket packet(id);
+        for (size_t i = 0; i < id.args.size(); ++i) {
+            auto numbers = id.args.at(i) | views::split(str(",")) | ranges::to<dyn_arr<str>>();
+            if (numbers.size() != 2) return err(fmt::format("Arg {} did not have a length of 2.", i));
+            ivec2 chunk_pos;
+            try { chunk_pos = ivec2(str_to<int>(numbers[0]), str_to<int>(numbers[1])); }
+            catch(std::invalid_argument e) { return err(fmt::format("Arg {} was not an ivec2.", i)); }
+            write_chunk_to_packet(chunk_pos, packet.packet);
+        }
+        return packet;
+    }
+    return err("");
+}
+
+result<none_t, str> World::read_message(LogicalPacket&& packet) {
+    if (packet.id.type == "chunk") {
+        for (size_t i = 0; i < packet.id.args.size(); ++i) {
+            auto numbers = packet.id.args.at(i) | views::split(str(",")) | ranges::to<dyn_arr<str>>();
+            if (numbers.size() != 2) return err(fmt::format("Arg {} did not have a length of 2.", i));
+            ivec2 chunk_pos;
+            try { chunk_pos = ivec2(str_to<int>(numbers[0]), str_to<int>(numbers[1])); }
+            catch(std::invalid_argument e) { return err(fmt::format("Arg {} was not an ivec2.", i)); }
+
+            str buffer; packet.packet >> buffer;
+            auto result = glz::read_json<Chunk>(buffer);
+            if (result) {
+                print<success, World>("Recieved chunk at [{}].", fmt::join(chunk_pos, ", "));
+            }
+            else return err(fmt::format("Chunk json for arg {} failed to parse ({},{}).",
+                packet.id.args.at(i), std::to_underlying(result.error().ec), result.error().custom_error_message)
+            );
+        }
+        return none;
+    }
+    return err("");
 }
 
 Chunk* World::chunk_at(const ivec2& chunk_coords) { return _chunk_map.contains(chunk_coords) ? &(_chunk_map.at(chunk_coords)) : nullptr; }

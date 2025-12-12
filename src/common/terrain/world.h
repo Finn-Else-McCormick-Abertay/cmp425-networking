@@ -14,11 +14,11 @@
 
 class World : IDrawable, INetworked {
 public:
-    World(id, int32 seed);
-    World(id = "default::world"_id);
+    World(const id&, int32 seed);
+    World(const id& = "default::world"_id);
 
-    id type_id() const;
-    int32 seed() const;
+    const id& id() const;   void set_id(const ::id&);
+    int32 seed() const;     void set_seed(int32);
 
     Chunk* chunk_at(const ivec2& chunk_coords); const Chunk* chunk_at(const ivec2& chunk_coords) const;
     Chunk* set_chunk(const ivec2& chunk_coords, opt<Chunk>&&, bool replace = true);
@@ -29,19 +29,22 @@ public:
     #ifdef CLIENT
     virtual void draw(sf::RenderTarget&, draw_layer layer) override;
     #endif
-    
-    virtual dyn_arr<LogicalPacket> write_messages() const override;
-    virtual void read_message(LogicalPacket&&) override;
 
 private:
-    id _world_type_id;
-    int32 _world_seed;
+    ::id _world_id; int32 _world_seed;
+    static str calculate_network_id(const ::id& id, int32 seed);
 
     friend class glz::meta<World>;
     bstmap<ivec2, Chunk> _chunk_map;
 
     dyn_arr<Chunk> get_flattened_chunks() const;
     void set_chunks_from_flattened(const dyn_arr<Chunk>&);
+
+    virtual dyn_arr<LogicalPacket> get_outstanding_messages() const override;
+    virtual result<LogicalPacket, str> get_requested_message(const PacketId& id) const override;
+    virtual result<none_t, str> read_message(LogicalPacket&&) override;
+
+    void write_chunk_to_packet(const ivec2& chunk_coords, sf::Packet&) const;
 
 public:
     struct iterator {
@@ -82,7 +85,7 @@ public:
 
 template<> struct glz::meta<World> {
     static constexpr auto value = object(
-        "id", &World::_world_type_id,
+        "id", &World::_world_id,
         "seed", &World::_world_seed,
         "chunks", glz::custom<&World::set_chunks_from_flattened, &World::get_flattened_chunks>
     );

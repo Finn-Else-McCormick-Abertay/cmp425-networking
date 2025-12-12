@@ -12,13 +12,13 @@ void NetworkManager::Registry::__register(INetworked& networked) {
     if (inst()._networked_by_id.contains(network_id)) print<error, NetworkManager::Registry>("Overwrote network id '{}'.");
     inst()._networked.insert(&networked);
     inst()._networked_by_id[network_id] = &networked;
-    print<debug, NetworkManager::Registry>("Registered {}", network_id);
+    //print<debug, NetworkManager::Registry>("Registered {}", network_id);
 }
 
 void NetworkManager::Registry::__unregister(INetworked& networked) {
     inst()._networked.erase(&networked);
     inst()._networked_by_id.erase(networked.network_id());
-    print<debug, NetworkManager::Registry>("Unregistered {}", networked.network_id());
+    //print<debug, NetworkManager::Registry>("Unregistered {}", networked.network_id());
 }
 
 NetworkManager::~NetworkManager() {
@@ -102,7 +102,7 @@ void NetworkManager::network_tick(uint64 elapsed_ticks) {
             received_packet >> owner_id; received_packet >> packet_id;
             if (inst()._networked_by_id.contains(owner_id)) {
                 auto networked = inst()._networked_by_id.at(owner_id);
-                networked->read_message({ packet_id, move(received_packet) });
+                networked->read(LogicalPacket(packet_id, move(received_packet)));
             }
             else print<error, NetworkManager>("Recieved packet directed to non-existent network id '{}'.", owner_id);
         }
@@ -116,10 +116,10 @@ void NetworkManager::network_tick(uint64 elapsed_ticks) {
     // Handle outgoing messages
     for (auto networked : inst()._networked) {
         auto owner_id = networked->network_id();
-        auto messages = networked->write_messages();
+        auto messages = networked->outstanding();
         for (auto& message : messages) {
             sf::Packet wrapped_packet;
-            wrapped_packet << owner_id; wrapped_packet << message.packet_id;
+            wrapped_packet << owner_id; wrapped_packet << message.id.as_str();
             wrapped_packet.append(message.packet.getData(), message.packet.getDataSize());
             inst().send_packet(wrapped_packet);
         }
