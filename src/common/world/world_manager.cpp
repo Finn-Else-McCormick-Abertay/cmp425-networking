@@ -22,10 +22,10 @@ opt_ref<Level> WorldManager::level(const id& level_id) {
 
 void WorldManager::init() {
     inst();
-    /*if (!inst()._world && NetworkManager::server_address()) {
+    if (!inst()._world && NetworkManager::server_address()) {
         // Request world information from server
         NetworkManager::request(inst().network_id(), packet_id("world"), *NetworkManager::server_address());
-    }*/
+    }
 }
 
 bool WorldManager::try_save() {
@@ -48,7 +48,7 @@ void WorldManager::internal_load(World&& world, bool authority) {
     if (auto default_level = inst()._world->level("world"_id); !default_level) inst()._world->make_level("world"_id);
 
     print<success, WorldManager>("Loaded world '{}' as {}authority.", inst()._world->name(), authority ? "" : "non-");
-    if (authority) NetworkManager::broadcast(inst().network_id(), packet_id("world"));
+    //if (authority) NetworkManager::broadcast(inst().network_id(), packet_id("world"));
 }
 
 bool WorldManager::load_from_file(const str& name) {

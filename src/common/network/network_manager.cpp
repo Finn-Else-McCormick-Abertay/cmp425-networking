@@ -67,7 +67,7 @@ bool NetworkManager::disconnect_listener() {
 bool NetworkManager::connect(const sf::IpAddress& address, sf::Time timeout) { return connect(address, sf::TcpSocket(), timeout); }
 bool NetworkManager::connect(const sf::IpAddress& address, sf::TcpSocket&& socket, sf::Time timeout) {
     if (!socket.getRemoteAddress() || *socket.getRemoteAddress() != address) {
-        if (auto status = socket.connect(address, sf::Socket::AnyPort, timeout); status != sf::Socket::Status::Done) return false;
+        if (auto status = socket.connect(address, LISTENER_PORT, timeout); status != sf::Socket::Status::Done) return false;
     }
     socket.setBlocking(false);
     inst()._sockets[address] = move(socket);
