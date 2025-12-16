@@ -47,7 +47,7 @@ result<World, str> SaveManager::load_world(const str& world_name) {
     if (auto file = ifstream(path)) file >> buffer;
     else return err(fmt::format("Failed to read from save file '{}'.", path));
     
-    print<debug, World>(buffer);
+    //print<debug, World>(buffer);
 
     auto result = glz::read_json<World>(buffer);
     if (!result) return err(fmt::format("Deserialisation failed: {}", result.error().custom_error_message));

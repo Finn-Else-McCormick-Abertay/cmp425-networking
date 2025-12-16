@@ -24,7 +24,8 @@ void WorldManager::init() {
     inst();
     if (!inst()._world && NetworkManager::server_address()) {
         // Request world information from server
-        NetworkManager::request(inst().network_id(), packet_id("world"), *NetworkManager::server_address());
+        NetworkManager::request(inst().network_id(), packet_id("world"),
+            *NetworkManager::server_address().transform([](const sf::IpAddress& ip) { return make_pair(ip, NetworkManager::SERVER_PORT); } ));
     }
 }
 
@@ -100,7 +101,7 @@ result<success_t, str> WorldManager::read_message(LogicalPacket&& packet) {
         auto result = glz::read_json<World>(buffer);
         if (!result) return err("Deserialisation failed.");
 
-        print<debug, WorldManager>(buffer);
+        //print<debug, WorldManager>(buffer);
         
         internal_load(move(*result), false);
         return empty_success;
