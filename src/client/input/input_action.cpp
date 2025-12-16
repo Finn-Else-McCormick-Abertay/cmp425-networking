@@ -1,5 +1,12 @@
 #include "input_action.h"
 
+#include <input/input_manager.h>
+
+input_impl::IInputAction::IInputAction(const str& name, const std::type_info& value_type, ActionDefinition&& definition) {
+    InputManager::Registry::__register(*this, name, value_type, move(definition));
+}
+input_impl::IInputAction::~IInputAction() { InputManager::Registry::__unregister(*this); }
+
 bool input_impl::IInputAction::down() const { return _down; }
 bool input_impl::IInputAction::just_pressed() const { return _down && !_was_down_last_frame; }
 bool input_impl::IInputAction::just_released() const { return !_down && _was_down_last_frame; }

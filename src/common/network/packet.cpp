@@ -2,36 +2,42 @@
 
 #include <alias/ranges.h>
 
-PacketId::PacketId(const str& type, dyn_arr<str>&& args) : type(type), args(move(args)), _str_repr(PacketId::to_str(*this)) {}
-PacketId::PacketId(const str& s) : PacketId(move(from_str(s))) {}
+packet_id::packet_id(const str& type, dyn_arr<str>&& args) : _type(type), _args(move(args)), _str_repr(packet_id::to_str(*this)) {}
+packet_id::packet_id(const str& s) : packet_id(move(from_str(s))) {}
 
-PacketId::PacketId() : type(""), args({}), _str_repr("") {}
-PacketId::PacketId(const PacketId& rhs) : type(rhs.type), args(rhs.args), _str_repr(rhs._str_repr) {}
-PacketId::PacketId(PacketId&& rhs) : type(rhs.type), args(rhs.args), _str_repr(move(rhs._str_repr)) {}
+packet_id::packet_id() : _type(""), _args({}), _str_repr("") {}
+packet_id::packet_id(const packet_id& rhs) : _type(rhs._type), _args(rhs._args), _str_repr(rhs._str_repr) {}
+packet_id::packet_id(packet_id&& rhs) : _type(rhs._type), _args(rhs._args), _str_repr(move(rhs._str_repr)) {}
 
-const str& PacketId::as_str() const {
-    if (!_str_repr) _str_repr = PacketId::to_str(*this);
+packet_id& packet_id::operator=(const packet_id& rhs) { _type = rhs._type; _args = rhs._args; _str_repr = rhs._str_repr; return *this; }
+packet_id& packet_id::operator=(packet_id&& rhs) { _type = move(rhs._type); _args = move(rhs._args); _str_repr = move(rhs._str_repr); return *this; }
+
+const str& packet_id::type() const { return _type; }
+const dyn_arr<str>& packet_id::args() const { return _args; }
+
+const str& packet_id::as_str() const {
+    if (!_str_repr) _str_repr = packet_id::to_str(*this);
     return _str_repr.value();
 }
 
-str PacketId::to_str(const PacketId& id) {
-    if (id.args.empty()) return id.type;
-    return fmt::format("{}!{}", id.type, fmt::join(id.args, ";"));
+str packet_id::to_str(const packet_id& id) {
+    if (id._args.empty()) return id._type;
+    return fmt::format("{}!{}", id._type, fmt::join(id._args, ";"));
 }
 
-PacketId PacketId::from_str(const str& s) {
+packet_id packet_id::from_str(const str& s) {
     auto meta_start = s.find('!');
-    if (meta_start == str::npos) return PacketId(s, {});
+    if (meta_start == str::npos) return packet_id(s, {});
     str type = s.substr(0, meta_start);
-    dyn_arr<str> args; for (auto arg : s.substr(meta_start) | views::split(';') | ranges::to<dyn_arr<str>>()) args.emplace_back(arg);
-    return PacketId(type, move(args));
+    dyn_arr<str> args; for (auto arg : s.substr(meta_start + 1) | views::split(';') | ranges::to<dyn_arr<str>>()) args.emplace_back(arg);
+    return packet_id(type, move(args));
 }
 
-bool operator==(const PacketId& lhs, const PacketId& rhs) { return lhs.as_str() == rhs.as_str(); }
-bool operator!=(const PacketId& lhs, const PacketId& rhs) { return !(lhs == rhs); }
-strong_ordering operator<=>(const PacketId& lhs, const PacketId& rhs) { return lhs.as_str() <=> rhs.as_str(); }
+bool operator==(const packet_id& lhs, const packet_id& rhs) { return lhs.as_str() == rhs.as_str(); }
+bool operator!=(const packet_id& lhs, const packet_id& rhs) { return !(lhs == rhs); }
+strong_ordering operator<=>(const packet_id& lhs, const packet_id& rhs) { return lhs.as_str() <=> rhs.as_str(); }
 
-LogicalPacket::LogicalPacket(const PacketId& id, sf::Packet&&) : id(id), packet(move(packet)) {}
-LogicalPacket::LogicalPacket(PacketId&& id, sf::Packet&& packet) : id(move(id)), packet(move(packet)) {}
-LogicalPacket::LogicalPacket(const str&, sf::Packet&& packet) : LogicalPacket(PacketId(id), move(packet)) {}
-LogicalPacket::LogicalPacket() : id(), packet() {}
+LogicalPacket::LogicalPacket(const packet_id& id, uint64 time, sf::Packet&& packet) : id(id), time(time), packet(move(packet)) {}
+LogicalPacket::LogicalPacket(packet_id&& id, uint64 time, sf::Packet&& packet) : id(move(id)), time(time), packet(move(packet)) {}
+LogicalPacket::LogicalPacket(const str& id, uint64 time, sf::Packet&& packet) : LogicalPacket(packet_id(id), time, move(packet)) {}
+LogicalPacket::LogicalPacket() : id(), time(0), packet() {}

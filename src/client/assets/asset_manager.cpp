@@ -3,81 +3,133 @@
 #include <data/data_manager.h>
 #include <console.h>
 
+DEFINE_SINGLETON(AssetManager);
 
-DEFINE_SINGLETON(assets::Manager);
-
-void assets::Manager::reload() {
-    inst()._tile_textures.clear();
-    inst()._item_textures.clear();
+void AssetManager::reload() {
+    unload();
     on_data_changed();
 }
 
-const Texture& assets::Manager::get_tile_texture(const id& id) {
-    if (inst()._tile_textures.contains(id)) return inst()._tile_textures.at(id);
-    return inst()._placeholder_texture;
-}
-const Texture& assets::Manager::get_item_texture(const id& id) {
-    if (inst()._item_textures.contains(id)) return inst()._item_textures.at(id);
-    return inst()._placeholder_texture;
+void AssetManager::unload() {
+    inst()._textures.clear();
+    inst()._fonts.clear();
 }
 
-opt_cref<Font> assets::Manager::get_font(const id& id) {
-    if (inst()._fonts.contains(id)) return cref(inst()._fonts.at(id));
-    print<warning, Manager>("No such font '{}'.", id);
+opt_cref<Texture> AssetManager::try_get_texture(const asset_id& id) {
+    if (id.type() == AssetType::unknown) return try_get_texture(id.with_type(AssetType::texture));
+    if (inst()._textures.contains(id)) return cref(inst()._textures.at(id));
     return nullopt;
 }
+const Texture& AssetManager::get_texture(const asset_id& id) {
+    if (auto opt = try_get_texture(id)) return *opt;
+    if (auto opt = try_get_texture(asset_id("default::placeholder"_id, id.type()))) return *opt;
+    if (auto opt = try_get_texture(asset_id("default::placeholder"_id, AssetType::texture))) return *opt;
+    print<error, AssetManager>("Failed to find texture placeholder.");
+    throw std::exception();
+}
 
-void assets::Manager::on_data_changed() {
-    // Load placeholder texture
-    if (auto opt = attempt_load_texture("placeholder"); opt) inst()._placeholder_texture = move(opt.value());
-    else inst()._placeholder_texture = Texture();
+opt_cref<Font> AssetManager::try_get_font(const asset_id& id) {
+    if (id.type() == AssetType::unknown) return try_get_font(id.with_type(AssetType::font));
+    if (inst()._fonts.contains(id)) return cref(inst()._fonts.at(id));
+    return nullopt;
+}
+const Font& AssetManager::get_font(const asset_id& id) {
+    if (auto opt = try_get_font(id)) return *opt;
+    if (auto opt = try_get_font(asset_id("default::placeholder"_id, id.type()))) return *opt;
+    if (auto opt = try_get_font(asset_id("default::placeholder"_id, AssetType::font))) return *opt;
+    print<error, AssetManager>("Failed to find font placeholder.");
+    throw std::exception();
+}
+
+void AssetManager::on_data_changed() {
+    // Load or create placeholder texture
+    if (!load(asset_id("default::placeholder"_id, AssetType::texture)))
+        inst()._textures[asset_id("default::placeholder"_id, AssetType::texture)] = Texture();
 
     // Load tile textures
-    for (auto& id : data::Manager::tile_ids()) {
-        auto tile = data::Manager::get_tile(id);
-        filepath logical_path = tile.value().get()._texture_path;
-        if (!logical_path.empty()) {
-            auto opt = attempt_load_texture(logical_path);
-            if (opt) inst()._tile_textures[id] = move(opt.value());
-        }
+    for (auto& id : DataManager::tile_ids()) {
+        const data::TileHandle& handle = *DataManager::get_tile(id);
+        if (handle.model_type() == data::TileHandle::ModelType::Block) load(asset_id(id, AssetType::texture_tileset), handle._texture_path);
+        else if (handle.model_type() == data::TileHandle::ModelType::Custom) load(asset_id(id, AssetType::texture), handle._texture_path);
     }
     
     // Load item textures
-    for (auto& id : data::Manager::item_ids()) {
-        auto item = data::Manager::get_item(id);
-        filepath logical_path = item.value().get()._texture_path;
-        if (!logical_path.empty()) {
-            auto opt = attempt_load_texture(logical_path);
-            if (opt) inst()._item_textures[id] = move(opt.value());
-        }
+    for (auto& id : DataManager::item_ids()) {
+        const data::ItemHandle& handle = *DataManager::get_item(id);
+        load(asset_id(id, AssetType::texture_item), handle._texture_path);
     }
 
     // Load fonts
-    for (auto& entry : dir("resources/assets/fonts/")) {
-        if (entry.is_directory()) continue;
-        auto opt = attempt_load_font(entry.path().filename());
-        if (opt) {
-            inst()._fonts[id(entry.path().stem().generic_string())] = move(opt.value());
-            print<info, Manager>("Loaded font '{}'.", id(entry.path().stem().generic_string()));
+    load_all_within("font", AssetType::font);
+    auto font_folder = DataManager::resources_folder() / "assets" / "font";
+}
+
+fs::path AssetManager::validate_file_path(const fs::path& input_path, AssetType type) {
+    auto path = (DataManager::resources_folder() / "assets" / input_path).lexically_normal();
+    if (type == AssetType::unknown) return path;
+    dyn_arr<str> allowed_exts;
+    switch (type) {
+        case AssetType::font:
+            allowed_exts = { ".ttf", ".otf" }; break;
+        case AssetType::texture: case AssetType::texture_item: case AssetType::texture_tileset:
+            allowed_exts = { ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".hdr" }; break;
+        default: return path;
+    }
+    if (!path.has_extension()) {
+        for (auto& ext : allowed_exts) {
+            auto path_with_ext = path.replace_extension(ext);
+            if (fs::exists(path_with_ext)) { path = path_with_ext; break; }
         }
     }
+    else if (!ranges::contains(allowed_exts, path.extension()))
+        print<warning, AssetManager>("{} : invalid file extension '{}' for {}.", "assets" / input_path, path.extension(), type);
+    
+    return path;
 }
 
-opt<Texture> assets::Manager::attempt_load_texture(const filepath& path) {
-    auto full_path = (filesystem::relative("resources/assets/textures/") / path).lexically_normal();
-    if (!full_path.has_extension()) full_path = full_path.replace_extension(".png");
-    
-    if (!filesystem::exists(full_path)) { print<error, Manager>("No such texture '{}'.", full_path); return nullopt; }
-    Texture texture; if (!texture.loadFromFile(full_path)) { print<error, Manager>("Failed to load texture from '{}'.", full_path); return nullopt; }
-    return texture;
+bool AssetManager::load(const asset_id& asset_id, opt<fs::path> path_opt) {
+    fs::path path = *path_opt.or_else([&asset_id](){
+        // TK - factor in namespaces
+        fs::path type_path;
+        switch (asset_id.type()) {
+            case AssetType::font: type_path = "font"; break;
+            case AssetType::texture: type_path = "texture"; break;
+            case AssetType::texture_tileset: type_path = "texture/tileset"; break;
+            case AssetType::texture_item: type_path = "texture/item"; break;
+            default: type_path = ""; break;
+        }
+        return make_opt(type_path / asset_id.name());
+    });
+    path = validate_file_path(path, asset_id.type());
+    if (!fs::exists(path)) { print<error, AssetManager>("Could not find asset {} at {}.", asset_id, path); return false; }
+
+    switch (asset_id.type()) {
+        case AssetType::font: {
+            Font font; font.setSmooth(false);
+            if (!font.openFromFile(path)) { print<error, AssetManager>("Failed to load font from '{}'.", path); return false; }
+            inst()._fonts[asset_id] = move(font);
+            return true;
+        } break;
+        case AssetType::texture: case AssetType::texture_tileset: case AssetType::texture_item: {
+            Texture texture;
+            if (!texture.loadFromFile(path)) { print<error, AssetManager>("Failed to load texture from '{}'.", path); return false; }
+            inst()._textures[asset_id] = move(texture);
+            return true;
+        } break;
+        default: {
+            print<error, AssetManager>("Could not load {} - unhandled asset type.", asset_id);
+            return false;
+        } break;
+    }
+    return false;
 }
 
-opt<Font> assets::Manager::attempt_load_font(const filepath& path) {
-    auto full_path = (filesystem::relative("resources/assets/fonts/") / path).lexically_normal();
-    if (!full_path.has_extension()) full_path = full_path.replace_extension(".ttf");
-    
-    if (!filesystem::exists(full_path)) { print<error, Manager>("No such font '{}'.", full_path); return nullopt; }
-    Font font; if (!font.openFromFile(full_path)) { print<error, Manager>("Failed to load font from '{}'.", full_path); return nullopt; }
-    font.setSmooth(false);
-    return font;
+void AssetManager::load_all_within(const fs::path& folder, AssetType type) {
+    auto asset_root = (DataManager::resources_folder() / "assets").lexically_normal();
+    auto folder_root = (asset_root / folder).lexically_normal();
+    for (auto& entry : fs::dir_recursive(folder_root)) {
+        if (entry.is_directory()) continue;
+        asset_id item_id = asset_id(id("default", fs::proximate(entry.path(), folder_root).replace_extension("").generic_string()), type);
+        load(item_id, fs::proximate(entry.path(), asset_root));
+    }
 }

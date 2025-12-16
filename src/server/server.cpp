@@ -1,24 +1,24 @@
-#include <prelude.h>
+#include <console.h>
+#include <cli.h>
 
 #include <data/data_manager.h>
-#include <save/save_manager.h>
 #include <network/network_manager.h>
-
-#include <terrain/world.h>
+#include <world/world_manager.h>
+#include <save/save_manager.h>
 
 #include <game_loop.h>
 
 #include <SFML/Window.hpp>
-#include <alias/opt.h>
 
-int main() {
+int main(int argc, char** argv) {    
     print<info>("Server init.");
 
-    data::Manager::reload();
-
-    World world = SaveManager::load().or_else([](){ return make_opt<World>(); }).value();
-
+    DataManager::reload();
+    
+    handle_cli(argc, argv, cli::dirs() | cli::world());
+    
     NetworkManager::connect_listener();
+    WorldManager::init();
 
     // Temp window so closing works properly. Should really have a CLI so it can run headless
     sf::Window window = sf::Window(sf::VideoMode(sf::Vector2u(200, 100)), "Server", sf::State::Windowed);
@@ -26,9 +26,8 @@ int main() {
     GameLoop game_loop;
     while (window.isOpen()) {
         window.handleEvents([&window](sf::Event::Closed event){ window.close(); });
-
         game_loop.tick();
     }
     
-    SaveManager::save(world);
+    WorldManager::try_save();
 }

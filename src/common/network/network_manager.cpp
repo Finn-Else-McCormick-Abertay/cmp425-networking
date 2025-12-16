@@ -3,9 +3,13 @@
 #include <console.h>
 #include <util/format/SFML/network.h>
 #include <prelude/format.h>
-#include <ranges>
+#include <alias/ranges.h>
 
 DEFINE_SINGLETON(NetworkManager);
+
+NetworkManager::~NetworkManager() {
+    disconnect_all();
+}
 
 void NetworkManager::Registry::__register(INetworked& networked) {
     auto network_id = networked.network_id();
@@ -21,53 +25,71 @@ void NetworkManager::Registry::__unregister(INetworked& networked) {
     //print<debug, NetworkManager::Registry>("Unregistered {}", networked.network_id());
 }
 
-NetworkManager::~NetworkManager() {
-    disconnect_all();
+const str& NetworkManager::username() { return inst()._username; }
+void NetworkManager::set_username(const str& username) {
+    inst()._username = username;
+    print<info, NetworkManager>("Set username to {}.", username);
+    // If connected to server
+    if (inst()._server_address && inst()._sockets.contains(inst()._server_address.value()))
+        print<warning, NetworkManager>("!UNHANDLED! Username changed while server connected.");
+}
+
+opt_cref<sf::IpAddress> NetworkManager::server_address() {
+    if (inst()._server_address) return cref(*inst()._server_address);
+    return nullopt;
+}
+
+void NetworkManager::connect_to_server(const sf::IpAddress& address, sf::Time timeout) {
+    inst()._server_address = address;
+    connect(inst()._server_address.value(), timeout);
 }
 
 bool NetworkManager::connect_listener() {
-    inst()._listener = make_opt<sf::TcpListener>();
-    inst()._listener.value().setBlocking(false);
-    if (inst()._listener.value().listen(PORT) != sf::Socket::Status::Done) {
-        print<error, NetworkManager>("Failed to begin listening on port {}.", PORT);
+    inst()._client_listener = make_opt<sf::TcpListener>();
+    inst()._client_listener.value().setBlocking(false);
+    if (inst()._client_listener.value().listen(LISTENER_PORT) != sf::Socket::Status::Done) {
+        print<error, NetworkManager>("Failed to begin listening on port {}.", LISTENER_PORT);
         return false;
     }
-    print<success, NetworkManager>("Listening on port {}.", PORT);
+    print<network_info, NetworkManager>("Listening on port {}.", LISTENER_PORT);
     return true;
 }
 bool NetworkManager::disconnect_listener() {
-    if (inst()._listener) {
-        print<success, NetworkManager>("Stopped listening on port {}.", inst()._listener.value().getLocalPort());
-        inst()._listener.value().close();
-        inst()._listener = nullopt;
+    if (inst()._client_listener) {
+        print<network_info, NetworkManager>("Stopped listening on port {}.", inst()._client_listener.value().getLocalPort());
+        inst()._client_listener.value().close();
+        inst()._client_listener = nullopt;
         return true;
     }
     return false;
 }
 
-bool NetworkManager::connect(const sf::IpAddress& address, sf::Time timeout) {
-    sf::TcpSocket socket;
-    auto status = socket.connect(address, PORT, timeout);
-    if (status != sf::Socket::Status::Done) {
-        print<error, NetworkManager>("Failed to connect to {} : {}.", address, status);
-        return false;
+bool NetworkManager::connect(const sf::IpAddress& address, sf::Time timeout) { return connect(address, sf::TcpSocket(), timeout); }
+bool NetworkManager::connect(const sf::IpAddress& address, sf::TcpSocket&& socket, sf::Time timeout) {
+    if (!socket.getRemoteAddress() || *socket.getRemoteAddress() != address) {
+        if (auto status = socket.connect(address, sf::Socket::AnyPort, timeout); status != sf::Socket::Status::Done) return false;
     }
     socket.setBlocking(false);
     inst()._sockets[address] = move(socket);
-    print<success, NetworkManager>("Connected to {}.", address);
+    print<network_info, NetworkManager>("Connected to {}.", address);
+    if (inst()._server_address && *inst()._server_address == address) inst()._server_socket = &inst()._sockets[address];
     return true;
 }
 
 bool NetworkManager::disconnect(const sf::IpAddress& address) {
     if (!inst()._sockets.contains(address)) {
-        print<error, NetworkManager>("Could not disconnect from {} : address is not connected.", address);
+        print<error, NetworkManager>("Could not disconnect from non-existent socket {}.", address);
         return false;
     }
-    auto& socket = inst()._sockets.at(address);
-    socket.disconnect();
-    print<success, NetworkManager>("Disconnected from {}.", address);
-    inst()._sockets.erase(address);
+    handle_disconnection(address);
     return true;
+}
+void NetworkManager::handle_disconnection(sf::IpAddress address, bool connection_lost) {
+    if (inst()._sockets.contains(address)) { inst()._sockets.at(address).disconnect(); inst()._sockets.erase(address); }
+    if (inst()._server_address && *inst()._server_address == address) inst()._server_socket = nullptr;
+
+    if (!connection_lost) print<success, NetworkManager>("Disconnected from {}.", address);
+    else print<network_info, NetworkManager>("{} disconnected.", address);
 }
 
 void NetworkManager::disconnect_all() {
@@ -77,53 +99,112 @@ void NetworkManager::disconnect_all() {
     }
 }
 
+void NetworkManager::seek_server_connection() {
+    if (_server_address && !_server_socket)
+        connect(*_server_address);
+}
+
+void NetworkManager::seek_client_connection() {
+    if (!_client_listener) return;
+    sf::TcpSocket new_socket;
+    auto status = _client_listener.value().accept(new_socket);
+    if (status == sf::Socket::Status::Done) connect(*new_socket.getRemoteAddress(), move(new_socket));
+    else if (status == sf::Socket::Status::Error) print<error, NetworkManager>("Failed to accept new connection.");
+}
+
+void NetworkManager::handle_incoming(const sf::IpAddress& address, sf::TcpSocket& socket) {
+    sf::Packet packet; auto status = socket.receive(packet);
+    if (status == sf::Socket::Status::Done) {
+        auto [owner, logical_packet, type] = unwrap(move(packet));
+        if (type == MessageType::Default) {
+            if (_networked_by_id.contains(owner)) _networked_by_id.at(owner)->read(move(logical_packet));
+            else print<error, NetworkManager>("Recieved packet directed to non-existent network id '{}'.", owner);
+        }
+        else if (type == MessageType::Request) {
+            _recieved_requests.emplace_back(owner, logical_packet.id, logical_packet.time, address);
+        }
+        else {
+            print<warning, NetworkManager>("Unhandled lifecycle request.");
+        }
+    }
+    else if (status == sf::Socket::Status::Disconnected) handle_disconnection(address, true);
+    else if (status != sf::Socket::Status::NotReady) print<error, NetworkManager>("Failed to recieve packet from {} : {}", address, status);
+}
+
+void NetworkManager::handle_outgoing(INetworked& networked) {
+    for (auto& message : networked.outstanding()) {
+        message.time = _current_tick;
+        send_packet(wrap(networked.network_id(), move(message), MessageType::Default));
+    }
+}
+
+void NetworkManager::request(const network_id& owner, const packet_id& packet_id, const sf::IpAddress& address) {
+    inst()._outgoing_requests.emplace_back(owner, packet_id, inst()._current_tick, address);
+}
+
+void NetworkManager::broadcast(const network_id& owner, const packet_id& packet_id, const sf::IpAddress& address) {
+    inst()._recieved_requests.emplace_back(owner, packet_id, inst()._current_tick, address);
+}
+
 void NetworkManager::network_tick(uint64 elapsed_ticks) {
-    // Seek new connections
-    if (inst()._listener) {
-        sf::TcpSocket new_socket; new_socket.setBlocking(false);
-        auto accept_status = inst()._listener.value().accept(new_socket);
-        if (accept_status == sf::Socket::Status::Done) {
-            auto address = new_socket.getRemoteAddress().value();
-            inst()._sockets[address] = move(new_socket);
-            print<info, NetworkManager>("Connected to {}.", address);
-        }
-        else if (accept_status == sf::Socket::Status::Error) print<error, NetworkManager>("Failed to accept new connection.");
-    }
+    uint64 tick_delta = elapsed_ticks - inst()._current_tick;
+    inst()._current_tick = elapsed_ticks;
 
-    // Handle incoming messages
+    // -- Seek connections --
+    inst().seek_server_connection();
+    inst().seek_client_connection();
+
+    // -- Handle incoming messages --
     for (auto it = inst()._sockets.begin(), it_next = it; it != inst()._sockets.end(); it = it_next) {
-        ++it_next;
-        auto& [address, socket] = *it;
-
-        sf::Packet received_packet;
-        auto status = socket.receive(received_packet);
-        if (status == sf::Socket::Status::Done) {
-            str owner_id, packet_id;
-            received_packet >> owner_id; received_packet >> packet_id;
-            if (inst()._networked_by_id.contains(owner_id)) {
-                auto networked = inst()._networked_by_id.at(owner_id);
-                networked->read(LogicalPacket(packet_id, move(received_packet)));
-            }
-            else print<error, NetworkManager>("Recieved packet directed to non-existent network id '{}'.", owner_id);
-        }
-        else if (status == sf::Socket::Status::Disconnected) {
-            print<info, NetworkManager>("{} has disconnected.", address);
-            inst()._sockets.erase(address);
-        }
-        else if (status != sf::Socket::Status::NotReady) print<error, NetworkManager>("Failed to recieve packet from {} : {}", address, status);
+        ++it_next; inst().handle_incoming(it->first, it->second);
     }
 
-    // Handle outgoing messages
-    for (auto networked : inst()._networked) {
-        auto owner_id = networked->network_id();
-        auto messages = networked->outstanding();
-        for (auto& message : messages) {
-            sf::Packet wrapped_packet;
-            wrapped_packet << owner_id; wrapped_packet << message.id.as_str();
-            wrapped_packet.append(message.packet.getData(), message.packet.getDataSize());
-            inst().send_packet(wrapped_packet);
-        }
+    // -- Handle outgoing messages --
+    
+    // Outgoing message requests
+    for (auto it = inst()._outgoing_requests.begin(), it_next = it; it != inst()._outgoing_requests.end(); it = it_next) {
+        ++it_next; auto [netid, packid, time, address] = *it;
+        if (inst().send_packet(wrap(netid, LogicalPacket(packid, inst()._current_tick), MessageType::Request), address))
+            it_next = inst()._outgoing_requests.erase(it);
     }
+
+    // Outgoing answers
+    for (auto it = inst()._recieved_requests.begin(), it_next = it; it != inst()._recieved_requests.end(); it = it_next) {
+        ++it_next; auto [netid, packid, time, address] = *it;
+
+        opt<LogicalPacket> answer = nullopt;
+        if (inst()._networked_by_id.contains(netid)) answer = inst()._networked_by_id.at(netid)->request(packid);
+
+        LogicalPacket pack = answer.or_else([&packid](){
+            auto packet = LogicalPacket(packid);
+            packet.packet << "unhandled";
+            return make_opt(move(packet));
+        }).value();
+        answer->time = inst()._current_tick;
+
+        if (inst().send_packet(wrap(netid, move(pack), MessageType::Default), address))
+            it_next = inst()._recieved_requests.erase(it);
+    }
+
+    // Ticked messages
+    for (auto networked : inst()._networked) inst().handle_outgoing(*networked);
+}
+
+sf::Packet NetworkManager::wrap(const network_id& owner, LogicalPacket&& message, MessageType type) {
+    sf::Packet wrapped;
+    wrapped << message.time;
+    wrapped << (int)type;
+    wrapped << owner.to_str();
+    wrapped << message.id.as_str();
+    wrapped.append(message.packet.getData(), message.packet.getDataSize());
+    return wrapped;
+}
+
+tuple<network_id, LogicalPacket, NetworkManager::MessageType> NetworkManager::unwrap(sf::Packet&& packet) {
+    uint64 time; packet >> time;
+    int type; packet >> type;
+    str owner_str, msg_id; packet >> owner_str; packet >> msg_id;
+    return make_tuple(network_id::from_str(owner_str), LogicalPacket(msg_id, time, move(packet)), (MessageType)type);
 }
 
 bool NetworkManager::send_packet(sf::Packet& packet, sf::TcpSocket& socket) {
@@ -132,18 +213,23 @@ bool NetworkManager::send_packet(sf::Packet& packet, sf::TcpSocket& socket) {
     return status == sf::Socket::Status::Done;
 }
 
-bool NetworkManager::send_packet(sf::Packet& packet, const sf::IpAddress& address) {
+bool NetworkManager::send_packet(sf::Packet&& packet, const sf::IpAddress& address) {
+    if (address == sf::IpAddress::Any) return send_packet(move(packet));
     if (!_sockets.contains(address)) return false;
     return send_packet(packet, _sockets.at(address));
 }
 
-bool NetworkManager::send_packet(sf::Packet& packet) {
+bool NetworkManager::send_packet(sf::Packet&& packet) {
     bool failed = false;
     for (auto& [address, socket] : _sockets) failed |= !send_packet(packet, socket);
     return !failed;
 }
 
 str NetworkManager::debug_message() {
-    auto keys_view = std::views::keys(inst()._networked_by_id);
-    return fmt::format("Networked Object Ids: {}", fmt::join(keys_view, ", "));
+    return fmt::format("{}", fmt::join(dyn_arr<str>{
+        fmt::format("Username: {}", inst()._username),
+        fmt::format("Server: {}", inst()._server_address
+            .transform([](const sf::IpAddress& x) { return fmt::format("{}", x); }).value_or("null")),
+        fmt::format("Networked Object Ids: {}", fmt::join(views::keys(inst()._networked_by_id), ", "))
+    }, "\n"));
 }

@@ -3,27 +3,23 @@
 		"configurations": [
 			{
 				"name": "Launch Client",
-				"type": "cppvsdbg",
+				"type": "lldb",
 				"request": "launch",
 				"preLaunchTask": "CMake: build",
-				"program": "${workspaceFolder}/build/Debug/NetworkingCoursework_client.exe",
-				"args": [],
-				"stopAtEntry": false,
+				"program": "${workspaceFolder}/build/NetworkingCoursework_client.exe",
+				"args": ["--user_dir _run", "--server localhost"],
 				"cwd": "${workspaceFolder}",
 				"console": "externalTerminal",
-				"environment": []
 			},
 			{
 				"name": "Launch Server",
-				"type": "cppvsdbg",
+				"type": "lldb",
 				"request": "launch",
 				"preLaunchTask": "CMake: build",
-				"program": "${workspaceFolder}/build/Debug/NetworkingCoursework_server.exe",
-				"args": [],
-				"stopAtEntry": false,
+				"program": "${workspaceFolder}/build/NetworkingCoursework_server.exe",
+				"args": ["--user_dir _run", "--world test"],
 				"cwd": "${workspaceFolder}",
-				"environment": [],
-				"console": "externalTerminal"
+				"console": "externalTerminal",
 			},
 		],
 		"compounds": [

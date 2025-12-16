@@ -53,4 +53,5 @@ build/
 # Module cache
 gcm.cache/
 
-run/
+# Run data
+_run/

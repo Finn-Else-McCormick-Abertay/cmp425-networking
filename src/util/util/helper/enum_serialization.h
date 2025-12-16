@@ -21,7 +21,7 @@ template <> struct fmt::formatter<EnumName>: formatter<string_view> { \
             WRAP_CALL(__INTERNAL_ENUM_CASE_FORMAT, DEPAREN(Values)) \
             default: value_name = fmt::format("unknown({})", fmt::underlying(v)); \
         } \
-        bool use_type_name = true; \
+        bool use_type_name = false; \
         WRAP_CALL(__INTERNAL_ENUM_ADD_SEMICOLON,__VA_ARGS__) \
         if (use_type_name) return formatter<str>().format(fmt::format("{}::{}", #EnumName, value_name), ctx); \
         else return formatter<str>().format(value_name, ctx); \

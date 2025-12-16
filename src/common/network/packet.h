@@ -5,30 +5,45 @@
 #include <prelude/containers.h>
 #include <SFML/Network/Packet.hpp>
 
-class PacketId {
+class packet_id {
 public:
-    PacketId(const str&); PacketId(); PacketId(const PacketId&); PacketId(PacketId&&);
-    const str type; const dyn_arr<str> args;
+    packet_id(const str&); packet_id();
+    packet_id(const str& type, dyn_arr<str>&& args);
+    packet_id(const packet_id&); packet_id(packet_id&&);
+
+    const str& type() const;
+    const dyn_arr<str>& args() const;
+
     const str& as_str() const;
+
+    packet_id& operator=(const packet_id&);
+    packet_id& operator=(packet_id&&);
 private:
-    PacketId(const str& type, dyn_arr<str>&& args);
+    str _type; dyn_arr<str> _args;
     mutable opt<str> _str_repr;
     
-    static str to_str(const PacketId&);
-    static PacketId from_str(const str&);
+    static str to_str(const packet_id&);
+    static packet_id from_str(const str&);
 };
 
-bool operator==(const PacketId&, const PacketId&);
-bool operator!=(const PacketId&, const PacketId&);
-strong_ordering operator<=>(const PacketId&, const PacketId&);
-template <> struct std::hash<PacketId> { size_t operator()(const PacketId& id) const { return std::hash<str_view>{}(id.as_str()); } };
+bool operator==(const packet_id&, const packet_id&);
+bool operator!=(const packet_id&, const packet_id&);
+strong_ordering operator<=>(const packet_id&, const packet_id&);
+template <> struct std::hash<packet_id> { size_t operator()(const packet_id& id) const { return std::hash<str_view>{}(id.as_str()); } };
 
 struct LogicalPacket {
-    PacketId id;
+    packet_id id;
+    uint64 time;
     sf::Packet packet;
     
     LogicalPacket();
-    LogicalPacket(const PacketId&, sf::Packet&& = sf::Packet());
-    LogicalPacket(PacketId&&, sf::Packet&& = sf::Packet());
-    LogicalPacket(const str&, sf::Packet&& = sf::Packet());
+    explicit LogicalPacket(const packet_id&, uint64 time = 0, sf::Packet&& = sf::Packet());
+    explicit LogicalPacket(packet_id&&, uint64 time = 0, sf::Packet&& = sf::Packet());
+    explicit LogicalPacket(const str&, uint64 time = 0, sf::Packet&& = sf::Packet());
+
+    LogicalPacket(LogicalPacket&&) = default;
+    LogicalPacket(const LogicalPacket&) = default;
+
+    LogicalPacket& operator=(LogicalPacket&&) = default;
+    LogicalPacket& operator=(const LogicalPacket&) = default;
 };

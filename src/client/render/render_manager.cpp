@@ -14,8 +14,12 @@ void RenderManager::Registry::__unregister(IDrawable& drawable) {
     inst()._removed_drawables.insert(&drawable);
 }
 
-void RenderManager::Registry::__register(Camera& camera) { inst()._cameras.insert(&camera); inst().on_camera_order_changed(); }
-void RenderManager::Registry::__unregister(Camera& camera) { inst()._cameras.erase(&camera); inst().on_camera_order_changed(); }
+void RenderManager::Registry::__register(Camera& camera) {
+    inst()._cameras.insert(&camera); inst().on_camera_order_changed();
+}
+void RenderManager::Registry::__unregister(Camera& camera) {
+    inst()._cameras.erase(&camera); inst().on_camera_order_changed();
+}
 
 void RenderManager::render() {
     if (!inst()._target) return;

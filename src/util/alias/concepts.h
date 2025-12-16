@@ -3,6 +3,7 @@
 #include <concepts>
 
 using std::same_as;
+using std::convertible_to;
 using std::integral;
 using std::signed_integral;
 using std::unsigned_integral;

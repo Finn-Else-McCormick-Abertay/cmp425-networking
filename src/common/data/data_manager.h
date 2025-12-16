@@ -9,29 +9,31 @@
 #include <prelude.h>
 #include <prelude/filesystem.h>
 #include <prelude/containers.h>
-#include <ranges>
+#include <alias/ranges.h>
 
 #include <util/helper/singleton.h>
 
-namespace data {
-    class Manager { DECL_SINGLETON(Manager);
-    public:
-        static void reload();
+class DataManager { DECL_SINGLETON(DataManager);
+public:
+    static void reload();
 
-        static opt_cref<TileHandle> get_tile(const id&);
-        static opt_cref<ItemHandle> get_item(const id&);
+    static opt_cref<data::TileHandle> get_tile(const id&);
+    static opt_cref<data::ItemHandle> get_item(const id&);
 
-        static inline auto tile_ids() { return std::views::keys(inst()._tile_handles); }
-        static inline auto item_ids() { return std::views::keys(inst()._item_handles); }
+    static inline auto tile_ids() { return views::keys(inst()._tile_handles); }
+    static inline auto item_ids() { return views::keys(inst()._item_handles); }
 
-        static uint32 id_mapping(const id&);
-        static const id& mapped_id(uint32);
+    static uint32 id_mapping(const id&);
+    static const id& mapped_id(uint32);
 
-    private:
-        hashmap<id, TileHandle> _tile_handles;
-        hashmap<id, ItemHandle> _item_handles;
+    static const fs::path& resources_folder();
+    static void set_resources_folder(const fs::path&);
+private:
+    hashmap<id, data::TileHandle> _tile_handles;
+    hashmap<id, data::ItemHandle> _item_handles;
 
-        void map_id(const id&, uint32);
-        hashmap<uint32, id> _mapped_to_ids; hashmap<id, uint32> _ids_to_mapped;
-    };
-}
+    void map_id(const id&, uint32);
+    hashmap<uint32, id> _mapped_to_ids; hashmap<id, uint32> _ids_to_mapped;
+
+    fs::path _resources_folder = "resources";
+};

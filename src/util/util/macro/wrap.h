@@ -3,6 +3,7 @@
 #include <util/macro/arg_count.h>
 #include <util/macro/token_paste.h>
 
+#define WRAP0(PRE, SUF, X) PRE##SUF
 #define WRAP1(PRE, SUF, X) PRE##X##SUF
 #define WRAP2(PRE, SUF, X1, X2) WRAP1(PRE, SUF, X1) WRAP1(PRE, SUF, X2)
 #define WRAP3(PRE, SUF, X1, X2, X3) WRAP2(PRE, SUF, X1, X2) WRAP1(PRE, SUF, X3)
@@ -16,6 +17,7 @@
 #define WRAP(PRE, SUF, ...) TOKEN_PASTE_INDIRECT(WRAP, GET_ARG_COUNT(__VA_ARGS__))(PRE, SUF, __VA_ARGS__)
 
 
+#define WRAP_CALL0(MACRO, X)
 #define WRAP_CALL1(MACRO, X) MACRO(X)
 #define WRAP_CALL2(MACRO, X1, X2) WRAP_CALL1(MACRO, X1) WRAP_CALL1(MACRO, X2)
 #define WRAP_CALL3(MACRO, X1, X2, X3) WRAP_CALL2(MACRO, X1, X2) WRAP_CALL1(MACRO, X3)

@@ -1,4 +1,5 @@
 #pragma once
+#include <prelude.h>
 #include <typeinfo>
 #include <concepts>
 #include <functional>
@@ -41,32 +42,32 @@ namespace input_impl {
 
     class IInputAction {
     public:
-        bool down() const;
-        bool just_pressed() const;
-        bool just_released() const;
-
-        operator bool() const;
-    
-    protected:  IInputAction() = default;
+        bool down() const; operator bool() const;
+        bool just_pressed() const; bool just_released() const;
+    protected:
+        IInputAction(const str&, const std::type_info&, ActionDefinition&&);
+        virtual ~IInputAction();
     private:
-        friend class InputManager;
-        bool _down, _was_down_last_frame;
-        virtual bool get_value_as_bool() const = 0; virtual float get_value_as_float() const = 0; virtual fvec2 get_value_as_fvec2() const = 0;
-        virtual void set_value(bool) = 0; virtual void set_value(float) = 0; virtual void set_value(fvec2) = 0;
+        bool _down, _was_down_last_frame; friend class ::InputManager;
+
+        virtual bool get_value_as_bool() const = 0;
+        virtual float get_value_as_float() const = 0;
+        virtual fvec2 get_value_as_fvec2() const = 0;
+
+        virtual void set_value(bool) = 0;
+        virtual void set_value(float) = 0;
+        virtual void set_value(fvec2) = 0;
     };
     
     template<typename TValue>
     class InputAction : public IInputAction {
     public:
-        InputAction(str name, ActionDefinition definition = {}) {
-            InputManager::Registry::__register(*this, name, typeid(TValue), move(definition));
-        }
+        InputAction(const str& name, ActionDefinition&& definition = {}) : IInputAction(name, typeid(TValue), move(definition)) {}
         TValue value() const { return _value; }
 
         operator TValue() const { return _value; }
     
     private:
-        friend class InputManager;
         TValue _value;
         
         bool  get_value_as_bool()  const override { return value_helper<TValue, bool >::cast(_value); }

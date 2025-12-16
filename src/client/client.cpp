@@ -1,44 +1,46 @@
-#include <prelude.h>
-#include <prelude/opt.h>
-
+#include <console.h>
 #include <window.h>
-#include <SFML/Graphics.hpp>
+#include <cli.h>
+
+#include <data/data_manager.h>
+#include <network/network_manager.h>
+#include <world/world_manager.h>
+#include <save/save_manager.h>
 
 #define __INPUT_ACTION_SYMBOL_DEFINITIONS__
 #include <input/actions.h>
-
 #include <input/input_manager.h>
-#include <data/data_manager.h>
 #include <assets/asset_manager.h>
-#include <save/save_manager.h>
-#include <network/network_manager.h>
 
-#include <terrain/world.h>
 #include <player/interaction_system.h>
 #include <debug/debug_system.h>
 #include <render/camera.h>
 
-#include <alias/bitset.h>
+#include <util/format/SFML/network.h>
 
-int main() {
+int main(int argc, char** argv) {
     print<info>("Client init.");
 
+    DataManager::reload();
+
+    handle_cli(argc, argv, cli::dirs() | cli::client());
+
+    if (!NetworkManager::server_address()) NetworkManager::connect_to_server(sf::IpAddress::LocalHost, 2s);
+    
     InputManager::init();
     InputManager::setup_default_binds();
 
-    data::Manager::reload();
+    WorldManager::init();
 
-    bool connected = false;
-    while (!connected) connected = NetworkManager::connect(sf::IpAddress::LocalHost, 5s);
-    
-    World world = SaveManager::load().or_else([](){ return make_opt<World>(); }).value();
-
+    // - TK: move to player actor
     auto player_camera = Camera("player");
-    auto interaction_system = player::InteractionSystem(&world);
-    auto debug_system = DebugSystem(&world);
+
+    // Systems
+    auto interaction_system = player::InteractionSystem();
+    auto debug_system = DebugSystem();
 
     Window window;
     window.enter_loop();
-    
-    SaveManager::save(world);
+
+    NetworkManager::disconnect_all();
 }

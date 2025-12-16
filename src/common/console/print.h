@@ -9,6 +9,8 @@
 #include <alias/str.h>
 #include <alias/utility.h>
 
+#include <util/helper/demangle.h>
+
 namespace console_impl {
     static constexpr auto DATE_COLOUR = fmt::color::turquoise;
     static constexpr auto UNKNOWN_COLOUR = fmt::color::red;
@@ -22,22 +24,15 @@ namespace console_impl {
         const fmt::text_style& style_text, const fmt::text_style& style_title, const fmt::text_style& style_separator,
         const str& type_name, const str& owner_name, fmt::string_view fmt, fmt::format_args args
     );
-
-    constexpr str clean_type_name(const char* type_name) {
-        str working(type_name);
-        if      (working.starts_with("class "))  working = working.substr(6);
-        else if (working.starts_with("struct ")) working = working.substr(7);
-        return working;
-    }
 }
 
 template<typename Ctx, typename Owner, typename... Args> void print(fmt::format_string<Args...> fmt, Args&&... args) {
     str ctx_name;
     if constexpr(console_impl::has_name<Ctx>) ctx_name = Ctx::NAME;
-    else ctx_name = console_impl::clean_type_name(typeid(Ctx).name());
+    else ctx_name = clean_type_name(typeid(Ctx).name());
     
     str owner_name;
-    if constexpr(!std::same_as<Owner, void>) owner_name = console_impl::clean_type_name(typeid(Owner).name());
+    if constexpr(!std::same_as<Owner, void>) owner_name = clean_type_name(typeid(Owner).name());
 
     fmt::detail::color_type text_colour = console_impl::UNKNOWN_COLOUR;
     if constexpr (console_impl::has_text_colour<Ctx>) text_colour = Ctx::TEXT_COLOUR;

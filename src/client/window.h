@@ -18,8 +18,6 @@ public:
     const str& title() const;
     void set_title(const str&);
 
-    void set_icon(const std::filesystem::path&);
-
     void enter_loop();
 
 private:
@@ -27,5 +25,5 @@ private:
     str _title; bool _open;
 
     void process_thread();
-    void render_thread();
+    //void render_thread();
 };

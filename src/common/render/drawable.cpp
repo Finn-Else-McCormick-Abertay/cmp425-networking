@@ -14,6 +14,7 @@ IDrawable::IDrawable(IDrawable&& rhs) {
     RenderManager::Registry::__register(*this);
 }
 
+dyn_arr<draw_layer> IDrawable::draw_layers() const { return { layers::unknown }; }
 
 #else
 IDrawable::IDrawable() { }
@@ -23,5 +24,3 @@ IDrawable::IDrawable(const IDrawable&) {}
 IDrawable::IDrawable(IDrawable&&) {}
 
 #endif
-
-dyn_arr<draw_layer> IDrawable::draw_layers() const { return { layers::unknown }; }

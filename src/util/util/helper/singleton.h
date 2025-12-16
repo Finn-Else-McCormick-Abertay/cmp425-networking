@@ -1,5 +1,4 @@
 #pragma once
-#include <memory>
 #include <util/macro/wrap.h>
 
 // -- Singleton --
@@ -11,7 +10,7 @@
     __VA_OPT__(private:) name(); __VA_ARGS__##__VA_OPT__(: )static name& inst()
 
 #define DEFINE_SINGLETON(name) \
-    name& name::inst() { static std::unique_ptr<name> instance(new name); return *instance; } static_assert(true, "")
+    name& name::inst() { static auto instance = name(); return instance; } static_assert(true, "")
 
 // -- Registry --
 

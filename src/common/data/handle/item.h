@@ -3,7 +3,7 @@
 #include <data/namespaced_id.h>
 #include <data/definitions/item.h>
 
-namespace assets { class Manager; }
+class AssetManager;
 
 namespace data {
 
@@ -15,9 +15,9 @@ namespace data {
     
     private:
         ::id _id;
-        str _texture_path;
+        opt<str> _texture_path;
         
-        friend class assets::Manager;
+        friend class ::AssetManager;
     };
 
 }

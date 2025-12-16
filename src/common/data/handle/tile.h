@@ -2,8 +2,9 @@
 
 #include <data/namespaced_id.h>
 #include <data/definitions/tile.h>
+#include <alias/filesystem.h>
 
-namespace assets { class Manager; }
+class AssetManager;
 
 namespace data {
 
@@ -20,9 +21,9 @@ namespace data {
     private:
         ::id _id;
         ModelType _model_type;
-        str _texture_path, _model_path;
+        opt<fs::path> _texture_path, _model_path;
 
-        friend class assets::Manager;
+        friend class ::AssetManager;
     };
 
 }

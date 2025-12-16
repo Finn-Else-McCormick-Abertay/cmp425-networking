@@ -7,6 +7,8 @@
 #include <input/input_manager.h>
 #include <system/system_manager.h>
 #include <render/render_manager.h>
+#include <assets/asset_manager.h>
+#include <world/world_manager.h>
 
 #include <game_loop.h>
 
@@ -23,14 +25,17 @@ Window::Window(str title, uvec2 size) :
     ) {
     _open = true;
     RenderManager::set_target(&_render_window);
-    set_icon("resources/assets/textures/placeholder.png");
+
+    _render_window.setIcon(AssetManager::get_texture("default::icon"_id).copyToImage());
 }
 
 void Window::enter_loop() {    
     if (!_render_window.setActive(false)) print<error, Window>("Failed to deactivate OpenGL context.");
-    thread render_thread = thread(&Window::render_thread, this);
+    //thread render_thread = thread(&Window::render_thread, this);
     process_thread();
-    render_thread.join();
+    //render_thread.join();
+    AssetManager::unload();
+    while (_render_window.isOpen()) { if (_render_window.setActive(true)) _render_window.close(); }
 }
 
 bool Window::is_open() const { return _open; }
@@ -38,23 +43,13 @@ bool Window::is_open() const { return _open; }
 const str& Window::title() const { return _title; }
 void Window::set_title(const str& title) { _title = title; _render_window.setTitle(_title); }
 
-void Window::set_icon(const filepath& path) {
-    if (!filesystem::exists(path)) return print<error, Window>("Could not set icon to non-existent image '{}'.", path);
-    sf::Image image;
-    if (!image.loadFromFile(path)) return print<error, Window>("Could not set icon to '{}' - file failed to load.", path);
-    _render_window.setIcon(image);
-}
-
 void Window::process_thread() {
     GameLoop game_loop;
     while (is_open()) {
-        // Tick InputManager (for handling stuff like 'just pressed')
-        InputManager::inst().tick();
-
         // Poll input
         while (const opt event = _render_window.pollEvent()) {
             // Send events to the input manager
-            if (event) InputManager::inst().receive_event(event.value());
+            if (event) InputManager::inst().receive_event(*event);
 
             // Handle close requests (currently just closes, should trigger save logic / are you sure dialog)
             if (event->is<Event::Closed>()) _open = false;
@@ -62,11 +57,17 @@ void Window::process_thread() {
             // Update camera aspects on resize
             else if (event->is<Event::Resized>()) RenderManager::set_target(&_render_window);
         }
-
+        // Tick InputManager (for handling stuff like 'just pressed')
+        InputManager::inst().tick();
         game_loop.tick();
+        
+        RenderManager::render();
+        _render_window.display();
     }
 }
 
+// Disabled currently as there were some race condition problems with the chunks that were causing crashes
+/*
 void Window::render_thread() {
     if (!_render_window.setActive(true)) print<error, Window>("Could not activate OpenGL context on render thread.");
     
@@ -79,5 +80,5 @@ void Window::render_thread() {
         RenderManager::render();
         _render_window.display();
     }
-    _render_window.close();
 }
+*/

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <macro/util/value_if.h>
+#include "value_if.h"
 
 #define GET_ARG_1(X, ...) X
 #define GET_ARG_2(X, ...) GET_ARG_1(__VA_ARGS__)

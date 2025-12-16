@@ -2,33 +2,33 @@
 
 #include <util/helper/singleton.h>
 
-#include <data/namespaced_id.h>
+#include <assets/asset_id.h>
 #include <alias/SFML/graphics.h>
 
 #include <prelude.h>
 #include <prelude/opt.h>
 #include <prelude/containers.h>
 #include <prelude/filesystem.h>
+#include <alias/ranges.h>
 
-namespace assets {
-    class Manager { DECL_SINGLETON(Manager);
-    public:
-        static void reload();
-        static void on_data_changed();
-        
-        static const Texture& get_tile_texture(const id&);
-        static const Texture& get_item_texture(const id&);
+class DataManager;
 
-        static opt_cref<Font> get_font(const id&);
+class AssetManager { DECL_SINGLETON(AssetManager);
+public:
+    static void reload();
+    static void unload();
 
-    private:
-        static opt<Texture> attempt_load_texture(const filepath&);
-        static opt<Font> attempt_load_font(const filepath&);
+    static const Texture& get_texture(const asset_id&); static opt_cref<Texture> try_get_texture(const asset_id&);
+    static const Font& get_font(const asset_id&);       static opt_cref<Font> try_get_font(const asset_id&);
 
-        Texture _placeholder_texture;
-        hashmap<id, Texture> _tile_textures;
-        hashmap<id, Texture> _item_textures;
+private:
+    static void on_data_changed(); friend class DataManager;
 
-        hashmap<id, Font> _fonts;
-    };
-}
+    static bool load(const asset_id&, opt<fs::path> path = nullopt);
+    static void load_all_within(const fs::path& folder, AssetType type);
+    
+    static fs::path validate_file_path(const fs::path&, AssetType type);
+
+    hashmap<asset_id, Texture> _textures;
+    hashmap<asset_id, Font> _fonts;
+};

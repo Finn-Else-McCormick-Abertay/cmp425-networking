@@ -15,6 +15,11 @@ struct debug {
     };
 };
 
+struct network_info {
+    static constexpr auto NAME = "network";
+    static constexpr auto TEXT_COLOUR = fmt::color::medium_turquoise;
+};
+
 struct success { static constexpr auto TEXT_COLOUR = fmt::color::lawn_green; };
 struct failure { static constexpr auto TEXT_COLOUR = fmt::color::tomato; };
 

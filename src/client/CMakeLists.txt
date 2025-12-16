@@ -12,6 +12,7 @@ target_sources(${CLIENT_NAME} PRIVATE
     render/render_manager.cpp
 
     assets/asset_manager.cpp
+    assets/asset_id.cpp
 
     debug/debug_system.cpp
 )

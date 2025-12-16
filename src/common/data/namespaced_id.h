@@ -1,48 +1,29 @@
 #pragma once
 
-#include <utility>
-#include <compare>
-#include <fmt/format.h>
-
-#include <glaze/glaze.hpp>
 #include <prelude.h>
 #include <alias/utility.h>
+#include <alias/compare.h>
+#include <fmt/format.h>
+#include <glaze/glaze.hpp>
 
 class id {
-private:
-    constexpr id(pair<str,str>&& pair) : _namespace(move(pair.first)), _name(move(pair.second)) {}
+private: 
 public:
-    constexpr id(const str& nmspace, const str& name) : _namespace(nmspace), _name(name) {}
-    constexpr id(const str& id) : id(find_namespace_and_name(id)) {}
-    constexpr id() : id("", "") {}
-    constexpr id(const id&) = default;
+    id(const str& nmspace, const str& name); id(const str& id); id(); id(const id&) = default;
 
-    inline const str& nmspace() const { return _namespace; }
-    inline const str& name() const { return _name; }
+    const str& nmspace() const;
+    const str& name() const;
 
-    inline str to_str() const { return fmt::format("{}::{}", _namespace, _name); }
-    inline operator str() const { return to_str(); }
+    str to_str() const;
     
-    inline std::strong_ordering operator<=>(const id& rhs) const { return to_str() <=> rhs.to_str(); }
-    inline bool operator==(const id& rhs) const { return _namespace == rhs._namespace && _name == rhs._name; }
+    strong_ordering operator<=>(const id& rhs) const;
+    bool operator==(const id& rhs) const;
 
-    constexpr id& operator=(const id& rhs) {
-        _namespace = rhs._namespace;
-        _name = rhs._name;
-        return *this;
-    }
-    
+    id& operator=(const id& rhs);
 private:
     str _namespace, _name;
-
     friend class glz::meta<id>;
-    static constexpr pair<str, str> find_namespace_and_name(const str& id_str) {
-        auto divider = id_str.find("::");
-        if (divider == str::npos) return make_pair("", id_str);
-        str nmspace = id_str.substr(0, divider);
-        str name; if (divider + 2 < str::npos) name = id_str.substr(divider + 2);
-        return std::make_pair(nmspace, name);
-    }
+    static pair<str, str> find_namespace_and_name(const str& id_str); //id(pair<str,str>&& pair);
 };
 
 constexpr id const operator ""_id(const char* literal, size_t) { return { str(literal) }; }

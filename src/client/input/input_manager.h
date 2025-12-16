@@ -33,7 +33,6 @@ public:
     
     static void setup_default_binds();
 
-
 private:
     struct ActionMeta {
         str name; std::type_index value_type; input_impl::ActionDefinition definition;

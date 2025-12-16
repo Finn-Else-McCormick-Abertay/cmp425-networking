@@ -5,26 +5,29 @@
 #include <prelude/opt.h>
 
 #include <network/packet.h>
+#include <network/network_id.h>
+#include <util/construct_markers.h>
 
 class INetworked {
 public:
-    INetworked(str network_id);
+    explicit INetworked(construct_noinit_t);
     INetworked(INetworked&&);
     virtual ~INetworked();
 
-    str network_id() const;
+    const network_id& network_id() const;
 
-    dyn_arr<LogicalPacket> outstanding() const;
-    opt<LogicalPacket> request(const PacketId& id) const;
+    dyn_arr<LogicalPacket> outstanding();
+    opt<LogicalPacket> request(const packet_id& id) const;
     void read(LogicalPacket&&);
 
 protected:
-    virtual dyn_arr<LogicalPacket> get_outstanding_messages() const;
-    virtual result<LogicalPacket, str> get_requested_message(const PacketId& id) const;
-    virtual result<none_t, str> read_message(LogicalPacket&&) = 0;
+    INetworked(const ::network_id& network_id);
+    void set_network_id(const ::network_id&);
 
-    void set_network_id(const str&);
+    virtual dyn_arr<LogicalPacket> get_outstanding_messages();
+    virtual result<LogicalPacket, str> get_requested_message(const packet_id& id) const;
+    virtual result<success_t, str> read_message(LogicalPacket&&);
 
 private:
-    str _network_id; bool _invalidated = false;
+    ::network_id _network_id; bool _invalidated = false;
 };
