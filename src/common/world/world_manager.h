@@ -22,6 +22,8 @@ private:
     opt<World> _world;
 
     static void internal_load(World&&, bool authority);
+    static void internal_unload();
+    static opt<str> validate_name(const str&);
 
     virtual result<LogicalPacket, str> get_requested_message(const packet_id& id) const override;
     virtual result<success_t, str> read_message(LogicalPacket&&) override;

@@ -22,23 +22,23 @@ void INetworked::set_network_id(const ::network_id& id) {
 }
 
 dyn_arr<LogicalPacket> INetworked::get_outstanding_messages() { return {}; }
-result<LogicalPacket, str> INetworked::get_requested_message(const packet_id& id) const { return err(""); }
-result<success_t, str> INetworked::read_message(LogicalPacket&& packet) { return err(""); }
+result<LogicalPacket, str> INetworked::get_requested_message(const packet_id& id) const { return err("REQUEST_UNHANDLED"); }
+result<success_t, str> INetworked::read_message(LogicalPacket&& packet) { return err("READ_UNHANDLED"); }
 
 dyn_arr<LogicalPacket> INetworked::outstanding() { return get_outstanding_messages(); }
 opt<LogicalPacket> INetworked::request(const packet_id& id) const {
     auto result = get_requested_message(id);
     if (result) return move(result.value());
 
-    if (result.error().empty()) print<warning, INetworked>("[{}] Packet request for '{}' was not handled.", _network_id, id.as_str());
-    else print<error, INetworked>("[{}] Packet request for '{}' failed: {}", _network_id, id.as_str(), result.error());
+    if (result.error() == "REQUEST_UNHANDLED") print<warning, INetworked>("{}[{}]: Request went unhandled.", _network_id, id);
+    else print<error, INetworked>("{}[{}]: Request failed. {}", _network_id, id, result.error());
     return nullopt;
 }
 
 void INetworked::read(LogicalPacket&& packet) {
-    packet_id id = packet.id;
     auto result = read_message(move(packet));
     if (result) return;
-    if (result.error().empty()) print<warning, INetworked>("[{}] Packet read for '{}' at {} was not handled.", _network_id, id.as_str(), packet.time);
-    else print<error, INetworked>("[{}] Packet read for '{}' at {} failed: {}", _network_id, id.as_str(), packet.time, result.error());
+    
+    if (result.error() == "READ_UNHANDLED") print<warning, INetworked>("{}[{}]: Read went unhandled.", _network_id, packet.id);
+    else print<error, INetworked>("{}[{}]: Read failed. {}", _network_id, packet.id, result.error());
 }

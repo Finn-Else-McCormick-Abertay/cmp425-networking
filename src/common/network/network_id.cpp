@@ -5,7 +5,10 @@ network_id::network_id(const id& type_id, const str& inst_id) : _type_id(type_id
 const id& network_id::type() const { return _type_id; }
 const str& network_id::inst() const { return _inst_id; }
 
-str network_id::to_str() const { return fmt::format("{}#{}", _type_id, _inst_id); }
+str network_id::to_str() const {
+    if (_inst_id.empty()) return _type_id.to_str();
+    return fmt::format("{}#{}", _type_id, _inst_id);
+}
 network_id network_id::from_str(const str& val) {
     if (auto divider = val.find('#'); divider != str::npos) return network_id(id(val.substr(0, divider)), val.substr(divider + 1));
     return network_id(id(val), "");

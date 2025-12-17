@@ -15,6 +15,16 @@ packet_id& packet_id::operator=(packet_id&& rhs) { _type = move(rhs._type); _arg
 const str& packet_id::type() const { return _type; }
 const dyn_arr<str>& packet_id::args() const { return _args; }
 
+opt<str> packet_id::get_arg(size_t index) const {
+    if (index > _args.size()) return nullopt;
+    return _args[index];
+}
+
+bool packet_id::has_flag(const str& flag) const {
+    for (auto& arg : _args) { if (arg == flag) return true; }
+    return false;
+}
+
 const str& packet_id::as_str() const {
     if (!_str_repr) _str_repr = packet_id::to_str(*this);
     return _str_repr.value();

@@ -26,6 +26,8 @@ public:
     static opt_cref<str> user_uid();
     static const str& username();
     static void set_username(const str&);
+
+    static opt_cref<str> get_uid(const SocketAddress&);
     
     static opt_cref<SocketAddress> server_address();
     static void set_server_address(const SocketAddress&);
@@ -48,6 +50,8 @@ private:
     
     void handle_incoming(const SocketAddress&, TcpSocket&);
     void handle_outgoing(INetworked&);
+
+    result<success_t, str> handle_lifecycle(const SocketAddress&, const network_id&, LogicalPacket&&);
     
     bool send_packet(sf::Packet&, TcpSocket&);
     bool send_packet(sf::Packet&&, const opt<SocketAddress>&);
@@ -56,16 +60,18 @@ private:
     enum class MessageType { Default, Request, Lifecycle };
     static sf::Packet wrap(const network_id& owner, LogicalPacket&&, MessageType);
     static tuple<network_id, LogicalPacket, MessageType> unwrap(sf::Packet&&);
-
-    str _username;
-    opt<str> _user_uid; bool _awaiting_user_uid;
     
     uint64 _current_tick;
     set<INetworked*> _networked; hashmap<network_id, INetworked*> _networked_by_id;
 
     dyn_arr<tuple<network_id, packet_id, uint64, opt<SocketAddress>>> _outgoing_requests, _outgoing_broadcasts;
-    //dyn_arr<pair<network_id, LogicalPacket>> _failed_messages;
+    
+    str _username;
+    opt<str> _user_uid; bool _awaiting_user_uid;
 
-    bstmap<SocketAddress, TcpSocket> _sockets;
+    bstmap<SocketAddress, TcpSocket> _sockets; bstmap<SocketAddress, str> _socket_uids;
     opt<TcpListener> _client_listener; opt<SocketAddress> _server_address;
+
+    opt_cref<str> try_set_uid(const SocketAddress&, const str& requested = "", bool try_fallback = true);
+    void clear_uid(const SocketAddress&);
 };

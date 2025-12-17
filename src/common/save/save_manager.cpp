@@ -17,7 +17,8 @@ void SaveManager::set_user_folder(const fs::path& path) {
 }
 
 result<success_t, str> SaveManager::save_world(const World& world) {
-    if (!fs::exists(user_folder())) return err(fmt::format("User directory '{}' invalid.", user_folder()));
+    //if (!fs::exists(user_folder())) return err(fmt::format("User directory '{}' invalid.", user_folder()));
+    fs::create_directories(user_folder());
     if (world.name().empty()) return err(fmt::format("World name was empty."));
 
     auto world_root = user_folder() / "saves" / world.name();

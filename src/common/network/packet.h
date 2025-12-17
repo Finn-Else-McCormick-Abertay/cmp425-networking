@@ -14,6 +14,9 @@ public:
     const str& type() const;
     const dyn_arr<str>& args() const;
 
+    opt<str> get_arg(size_t index) const;
+    bool has_flag(const str& flag) const;
+
     const str& as_str() const;
 
     packet_id& operator=(const packet_id&);
@@ -30,6 +33,7 @@ bool operator==(const packet_id&, const packet_id&);
 bool operator!=(const packet_id&, const packet_id&);
 strong_ordering operator<=>(const packet_id&, const packet_id&);
 template <> struct std::hash<packet_id> { size_t operator()(const packet_id& id) const { return std::hash<str_view>{}(id.as_str()); } };
+inline auto format_as(const packet_id& id) { return id.as_str(); }
 
 struct LogicalPacket {
     packet_id id;
