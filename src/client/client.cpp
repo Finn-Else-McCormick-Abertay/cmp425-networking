@@ -5,6 +5,7 @@
 #include <data/data_manager.h>
 #include <network/network_manager.h>
 #include <world/world_manager.h>
+#include <actor/actor_manager.h>
 #include <save/save_manager.h>
 
 #define __INPUT_ACTION_SYMBOL_DEFINITIONS__
@@ -28,6 +29,7 @@ int main(int argc, char** argv) {
 
     NetworkManager::init();
     WorldManager::init();
+    ActorManager::init();
 
     // - TK: move to player actor
     auto player_camera = Camera("player");

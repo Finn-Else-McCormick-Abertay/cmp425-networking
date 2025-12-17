@@ -6,7 +6,7 @@
 
 DEFINE_SINGLETON(WorldManager);
 
-WorldManager::WorldManager() : INetworked(::network_id("world_manager"_id, "")) {}
+WorldManager::WorldManager() : INetworked(::network_id("singleton"_id, "world_manager")) {}
 
 opt_ref<World> WorldManager::world() {
     if (inst()._world) return *inst()._world;

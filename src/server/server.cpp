@@ -4,6 +4,7 @@
 #include <data/data_manager.h>
 #include <network/network_manager.h>
 #include <world/world_manager.h>
+#include <actor/actor_manager.h>
 #include <save/save_manager.h>
 
 #include <game_loop.h>
@@ -19,6 +20,7 @@ int main(int argc, char** argv) {
     
     NetworkManager::init();
     WorldManager::init();
+    ActorManager::init();
 
     // Temp window so closing works properly. Should really have a CLI so it can run headless
     sf::Window window = sf::Window(sf::VideoMode(sf::Vector2u(200, 100)), "Server", sf::State::Windowed);
