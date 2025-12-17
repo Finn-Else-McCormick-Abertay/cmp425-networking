@@ -137,6 +137,7 @@ result<success_t, str> WorldManager::read_message(LogicalPacket&& packet) {
             return empty_success;
         }
         else if (event == "unloaded") {
+            print<debug, WorldManager>("RECIEVED UNLOAD REQUEST");
             internal_unload();
             return empty_success;
         }

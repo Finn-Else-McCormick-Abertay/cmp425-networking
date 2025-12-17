@@ -68,7 +68,7 @@ namespace input_impl {
         operator TValue() const { return _value; }
     
     private:
-        TValue _value;
+        TValue _value {0};
         
         bool  get_value_as_bool()  const override { return value_helper<TValue, bool >::cast(_value); }
         float get_value_as_float() const override { return value_helper<TValue, float>::cast(_value); }

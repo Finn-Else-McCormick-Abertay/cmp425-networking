@@ -65,7 +65,7 @@ using urect2 = rect2<unsigned>;
 
 template <typename T, typename U, size_t Size>
 rect<T, Size> operator +(const rect<T, Size>& r, const vec<U, Size>& v) {
-    return rect<T, Size>{ r.origin + v, r.size };
+    return rect<T, Size>{ vec<T, Size>{r.origin} + v, vec<T, Size>{r.size} };
 }
 
 template <typename T, typename U, size_t Size>

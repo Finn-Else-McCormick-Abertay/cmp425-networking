@@ -13,6 +13,12 @@ public:
 
     const fvec2& pos() const;
     void set_pos(const fvec2&);
+
+    const fvec2& velocity() const;
+    void set_velocity(const fvec2&);
+    
+    const fvec2& acceleration() const;
+    void set_acceleration(const fvec2&);
     
     const frect2& local_rect() const;
     const frect2& global_rect() const;
@@ -28,13 +34,16 @@ protected:
 
 private:
     id _type_id;
-    fvec2 _pos; frect2 _local_rect;
+    fvec2 _pos{0}, _velocity{0}, _accel{0}; frect2 _local_rect;
     // Cache global rect as it will need to be called very often during collision checks
     mutable frect2 _global_rect; mutable bool _global_rect_dirty = true;
 };
 
-class INetworkedActor : public IActor, INetworked {
+class INetworkedActor : public IActor, protected INetworked {
 protected:
     INetworkedActor(const ::network_id&);
     INetworkedActor(INetworkedActor&&);
+
+    //virtual dyn_arr<LogicalPacket> get_outstanding_messages() override;
+    //virtual result<success_t, str> read_message(LogicalPacket&&) override;
 };

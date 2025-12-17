@@ -23,7 +23,7 @@ public:
     static void request(const network_id&, const packet_id&, const opt<SocketAddress>& = nullopt);
     static void broadcast(const network_id&, const packet_id&, const opt<SocketAddress>& = nullopt);
 
-    static opt_cref<str> user_uid();
+    static opt<str> user_uid();
     static const str& username();
     static void set_username(const str&);
 

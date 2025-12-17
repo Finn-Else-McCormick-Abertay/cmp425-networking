@@ -7,9 +7,11 @@
 DEFINE_SINGLETON(RenderManager);
 
 void RenderManager::Registry::__register(IDrawable& drawable) {
+    if (!&inst()) return;
     inst()._added_drawables.insert(&drawable);
 }
 void RenderManager::Registry::__unregister(IDrawable& drawable) {
+    if (!&inst()) return;
     inst()._added_drawables.erase(&drawable);
     inst()._removed_drawables.insert(&drawable);
 }

@@ -15,7 +15,8 @@ NetworkManager::~NetworkManager() {
 
 void NetworkManager::Registry::__register(INetworked& networked) {
     auto network_id = networked.network_id();
-    if (inst()._networked_by_id.contains(network_id)) print<error, NetworkManager::Registry>("Overwrote network id '{}'.");
+    if (inst()._networked_by_id.contains(network_id))
+        print<error, NetworkManager::Registry>("Overwrote network id '{}'.");
     inst()._networked.insert(&networked);
     inst()._networked_by_id[network_id] = &networked;
     //print<debug, NetworkManager::Registry>("Registered {}", network_id);
@@ -43,10 +44,10 @@ void NetworkManager::set_username(const str& username) {
     print<info, NetworkManager>("Set username to {}.", username);
     // If connected to server
     if (inst()._server_address && inst()._sockets.contains(*inst()._server_address))
-        print<warning, NetworkManager>("!UNHANDLED! Username changed while server connected.");
+        print<error, NetworkManager>("!UNHANDLED! Username changed while server connected.");
 }
 
-opt_cref<str> NetworkManager::user_uid() {
+opt<str> NetworkManager::user_uid() {
     if (inst()._user_uid) return *inst()._user_uid;
     return nullopt;
 }
@@ -149,7 +150,7 @@ opt_cref<str> NetworkManager::try_set_uid(const SocketAddress& address, const st
     // As it stands this method should only ever run in server mode but yknow. Just in case.
     #ifdef SERVER
     // Create client's corresponding player
-    ActorManager::register_player(uid);
+    ActorManager::register_player(uid, false, true);
     #endif
 
     return cref(uid);
@@ -157,10 +158,8 @@ opt_cref<str> NetworkManager::try_set_uid(const SocketAddress& address, const st
 
 void NetworkManager::clear_uid(const SocketAddress& address) {
     if (!_socket_uids.contains(address)) return;
-    #ifdef SERVER
     // Destroy client's corresponding player
     ActorManager::unregister_player(_socket_uids[address]);
-    #endif
     _socket_uids.erase(address);
 }
 
@@ -186,6 +185,11 @@ result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& add
 
             auto wrapped = wrap(network_id("lifecycle"_id, "answer"), move(response_packet), MessageType::Lifecycle);
             send_packet(wrapped, _sockets.at(address));
+
+            // Update them on the already connected players
+            for (auto& [_, uid] : inst()._socket_uids)
+                broadcast(network_id("singleton"_id, "actor_manager"), packet_id("player", { "existing", uid }), address);
+
             return empty_success;
         }
         else {
@@ -214,7 +218,7 @@ void NetworkManager::handle_incoming(const SocketAddress& address, TcpSocket& so
         auto [owner, logical_packet, type] = unwrap(move(packet));
         if (type == MessageType::Default) {
             if (_networked_by_id.contains(owner)) _networked_by_id.at(owner)->read(move(logical_packet));
-            else print<error, NetworkManager>("Recieved packet directed to non-existent network id '{}'.", owner);
+            //else print<error, NetworkManager>("Recieved packet directed to non-existent network id '{}'.", owner);
         }
         else if (type == MessageType::Request) {
             _outgoing_broadcasts.emplace_back(owner, logical_packet.id, logical_packet.time, address);
@@ -227,6 +231,7 @@ void NetworkManager::handle_incoming(const SocketAddress& address, TcpSocket& so
     }
     else if (status == Socket::Status::Disconnected) {
         print<network_info>("Lost connection with {}.", address);
+        socket.disconnect();
         inst()._sockets.erase(address);
     }
     else if (status != Socket::Status::NotReady)
@@ -333,7 +338,7 @@ bool NetworkManager::send_packet(sf::Packet&& packet) {
 
 str NetworkManager::debug_message() {
     return fmt::format("{}", fmt::join(dyn_arr<str>{
-        fmt::format("Username: {}", inst()._username),
+        fmt::format("Username: {} | UID: {}", inst()._username, inst().user_uid().value_or("null")),
         fmt::format("Server: {}", inst()._server_address),
         fmt::format("Networked Object Ids: {}", fmt::join(views::keys(inst()._networked_by_id), ", "))
     }, "\n"));

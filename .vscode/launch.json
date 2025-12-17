@@ -5,8 +5,8 @@
 				"name": "Launch Client",
 				"type": "lldb",
 				"request": "launch",
-				"preLaunchTask": "CMake: build",
 				"program": "${workspaceFolder}/build/NetworkingCoursework_client.exe",
+				"preLaunchTask": "CMake: build",
 				"args": ["--user_dir _run", "--server localhost"],
 				"cwd": "${workspaceFolder}",
 				"console": "externalTerminal",
@@ -15,9 +15,29 @@
 				"name": "Launch Server",
 				"type": "lldb",
 				"request": "launch",
-				"preLaunchTask": "CMake: build",
 				"program": "${workspaceFolder}/build/NetworkingCoursework_server.exe",
+				"preLaunchTask": "CMake: build",
 				"args": ["--user_dir _run", "--world test"],
+				"cwd": "${workspaceFolder}",
+				"console": "externalTerminal",
+			},
+			{
+				"name": "Launch Client (User 1)",
+				"type": "lldb",
+				"request": "launch",
+				"program": "${workspaceFolder}/build/NetworkingCoursework_client.exe",
+				"preLaunchTask": "CMake: build",
+				"args": ["--server localhost", "--user User1"],
+				"cwd": "${workspaceFolder}",
+				"console": "externalTerminal",
+			},
+			{
+				"name": "Launch Client (User 2)",
+				"type": "lldb",
+				"request": "launch",
+				"program": "${workspaceFolder}/build/NetworkingCoursework_client.exe",
+				"preLaunchTask": "CMake: build",
+				"args": ["--server localhost", "--user User2"],
 				"cwd": "${workspaceFolder}",
 				"console": "externalTerminal",
 			},
@@ -25,7 +45,15 @@
 		"compounds": [
         {
             "name": "Server/Client",
-            "configurations": ["Launch Server", "Launch Client"]
+            "configurations": ["Launch Server", "Launch Client"],
+			"preLaunchTask": "CMake: build",
+      		"stopAll": true
+        },
+        {
+            "name": "Server/Multiple Client",
+            "configurations": ["Launch Server", "Launch Client (User 1)", "Launch Client (User 2)"],
+			"preLaunchTask": "CMake: build",
+			"stopAll": true
         }
     ]
 }

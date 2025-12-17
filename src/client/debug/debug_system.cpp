@@ -7,10 +7,10 @@
 #include <world/world_manager.h>
 
 void DebugSystem::tick(float dt) {
-    if (actions::debug::modifier.down()) {
-        if (actions::debug::tile.just_pressed()) _show_tile_debug = !_show_tile_debug;
-        if (actions::debug::network.just_pressed()) _show_network_debug = !_show_network_debug;
-    }
+    //if (actions::debug::modifier.down()) {
+    if (actions::debug::tile.just_pressed()) _show_tile_debug = !_show_tile_debug;
+    if (actions::debug::network.just_pressed()) _show_network_debug = !_show_network_debug;
+    //}
 }
 
 dyn_arr<draw_layer> DebugSystem::draw_layers() const { return { layers::tile::foreground + 1, layers::debug::ui_overlay }; }
