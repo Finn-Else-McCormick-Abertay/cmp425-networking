@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
     
     handle_cli(argc, argv, cli::dirs() | cli::world());
     
-    NetworkManager::connect_listener();
+    NetworkManager::init();
     WorldManager::init();
 
     // Temp window so closing works properly. Should really have a CLI so it can run headless

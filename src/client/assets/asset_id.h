@@ -4,7 +4,7 @@
 #include <data/namespaced_id.h>
 #include <util/helper/enum_serialization.h>
 
-DECL_SERIALIZED_ENUM_CLASS(AssetType, (
+DECL_ENUM_FORMATTED(enum class, AssetType, (
     unknown,
     texture,
     texture_tileset,

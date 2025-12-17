@@ -19,7 +19,7 @@ inline bool handle_cli(int argc, char** argv, const lyra::cli& cli, bool exit_on
     }
 
     if (show_help) {
-        print<info>("TK : HELP MSG");
+        std::cout << cli_final << std::endl;
         if (exit_on_help) exit(0);
     }
     return true;

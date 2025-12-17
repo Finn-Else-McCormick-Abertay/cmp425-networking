@@ -43,7 +43,6 @@ namespace data_impl {
                 Registry reg = result.value();
                 for (auto& [name, tile] : reg.tiles) existing.tiles[name] = tile;
                 for (auto& [name, item] : reg.items) existing.items[name] = item;
-
             }
         }
         print<success, DataManager>("Loaded namespace '{}'.", namespace_id);

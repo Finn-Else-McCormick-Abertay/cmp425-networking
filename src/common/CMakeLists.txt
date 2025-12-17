@@ -2,10 +2,11 @@
 set(COMMON_SOURCES
     game_loop.cpp
 
-    network/network_manager.cpp
-    network/networked.cpp
-    network/network_id.cpp
+    network/address.cpp
     network/packet.cpp
+    network/network_id.cpp
+    network/networked.cpp
+    network/network_manager.cpp
 
     world/world_manager.cpp
     world/world.cpp

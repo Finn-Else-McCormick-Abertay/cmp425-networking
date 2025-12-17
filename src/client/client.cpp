@@ -22,14 +22,11 @@ int main(int argc, char** argv) {
     print<info>("Client init.");
 
     DataManager::reload();
+    InputManager::init(); InputManager::setup_default_binds();
 
     handle_cli(argc, argv, cli::dirs() | cli::client());
 
-    if (!NetworkManager::server_address()) NetworkManager::connect_to_server(sf::IpAddress::LocalHost, 2s);
-    
-    InputManager::init();
-    InputManager::setup_default_binds();
-
+    NetworkManager::init();
     WorldManager::init();
 
     // - TK: move to player actor
@@ -41,6 +38,4 @@ int main(int argc, char** argv) {
 
     Window window;
     window.enter_loop();
-
-    NetworkManager::disconnect_all();
 }

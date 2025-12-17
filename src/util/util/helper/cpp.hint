@@ -1,0 +1,35 @@
+
+#define ESC_PAREN(...) __VA_ARGS__
+#define DEPAREN(arg) ESC_PAREN arg
+
+ENUM_FORMATTER(EnumName, Values, ...)
+
+ENUM_GLAZE(EnumType, Values) template <> struct glz::meta<EnumType> {}
+ENUM_GLAZE_AND_FORMATTER(EnumType, Values, ...)
+
+DECL_ENUM_FORMATTED(Signature, EnumName, Values, ...) Signature EnumName { DEPAREN(Values) }; ENUM_FORMATTER(EnumName, Values __VA_OPT__(,) __VA_ARGS__)
+DECL_ENUM_FORMATTED_GLAZED(Signature, EnumName, Values, ...) Signature EnumName { DEPAREN(Values) }; ENUM_FORMATTER(EnumName, Values __VA_OPT__(,) __VA_ARGS__); ENUM_GLAZE(EnumName, Values)
+
+
+#define DECL_SINGLETON(name, ...) __VA_OPT__(private:) name() = default; __VA_ARGS__##__VA_OPT__(: )static name& inst()
+
+#define DECL_SINGLETON_WITH_CONSTRUCTOR(name, ...) __VA_OPT__(private:) name(); __VA_ARGS__##__VA_OPT__(: )static name& inst()
+
+#define DEFINE_SINGLETON(name) name& name::inst() { static auto instance = name(); return instance; } static_assert(true, "")
+
+#define DECL_REGISTRY(type, ...) \
+    class Registry { Registry() = delete; public: \
+        __VA_OPT__(protected: )__VA_ARGS__ __VA_OPT__(class type;) \
+        static void __register(type&); static void __unregister(type&); \
+    }
+
+#define __REG_METHODS(type) static void __register(type&); static void __unregister(type&);
+#define DECL_MULTI_REGISTRY(...) \
+    class Registry { Registry() = delete; public: \
+        WRAP_CALL(__REG_METHODS, __VA_ARGS__) \
+    }
+
+#define DECL_REGISTRY_WITH_ARGS(type, ...) \
+    class Registry { Registry() = delete; public: \
+        static void __register(type& __VA_OPT__(,)__VA_ARGS__); static void __unregister(type&); \
+    }

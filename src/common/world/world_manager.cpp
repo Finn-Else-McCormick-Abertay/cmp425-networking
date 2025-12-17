@@ -24,8 +24,7 @@ void WorldManager::init() {
     inst();
     if (!inst()._world && NetworkManager::server_address()) {
         // Request world information from server
-        NetworkManager::request(inst().network_id(), packet_id("world"),
-            *NetworkManager::server_address().transform([](const sf::IpAddress& ip) { return make_pair(ip, NetworkManager::SERVER_PORT); } ));
+        NetworkManager::request(inst().network_id(), packet_id("world"), *NetworkManager::server_address());
     }
 }
 
@@ -49,7 +48,7 @@ void WorldManager::internal_load(World&& world, bool authority) {
     if (auto default_level = inst()._world->level("world"_id); !default_level) inst()._world->make_level("world"_id);
 
     print<success, WorldManager>("Loaded world '{}' as {}authority.", inst()._world->name(), authority ? "" : "non-");
-    //if (authority) NetworkManager::broadcast(inst().network_id(), packet_id("world"));
+    if (authority) NetworkManager::broadcast(inst().network_id(), packet_id("world"));
 }
 
 bool WorldManager::load_from_file(const str& name) {
@@ -58,10 +57,6 @@ bool WorldManager::load_from_file(const str& name) {
         print<error, WorldManager>("Failed to load world '{}': {}", name, result.error());
         return false;
     }
-    
-    auto write_result = glz::write_json(*result);
-    if (write_result) print<debug, WorldManager>(*write_result);
-
     internal_load(move(*result), true);
     return true;
 }
@@ -100,8 +95,6 @@ result<success_t, str> WorldManager::read_message(LogicalPacket&& packet) {
         str buffer; packet.packet >> buffer;
         auto result = glz::read_json<World>(buffer);
         if (!result) return err("Deserialisation failed.");
-
-        //print<debug, WorldManager>(buffer);
         
         internal_load(move(*result), false);
         return empty_success;

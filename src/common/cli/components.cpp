@@ -27,11 +27,11 @@ lyra::cli cli::client() {
     return lyra::cli()
         | lyra::opt(
             [](str ip){
-                if (auto opt = sf::IpAddress::resolve(ip)) NetworkManager::connect_to_server(*opt);
-                else print<warning>("{} is not a valid ip.", ip);
+                if (auto opt = SocketAddress::resolve(ip)) NetworkManager::set_server_address(*opt);
+                else print<warning>("{} is not a valid address.", ip);
             }, "server")
             ["-s"]["--server"]["--connect"]
-            ("Server ip address.")
+            ("Server address.")
             .optional()
         | lyra::opt([](str username) {
                 NetworkManager::set_username(username);

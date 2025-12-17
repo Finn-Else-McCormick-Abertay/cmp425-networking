@@ -13,5 +13,5 @@ namespace data { namespace definition {
     };
     static_assert(glz::reflectable<Tile>);
 }}
-ENUM_GLAZE_AND_FORMATTER(data::definition::ModelType, (none, block), use_type_name = false);
-ENUM_GLAZE_AND_FORMATTER(data::definition::CollisionType, (none, block), use_type_name = false);
+ENUM_GLAZE_AND_FORMATTER(data::definition::ModelType, (none, block));
+ENUM_GLAZE_AND_FORMATTER(data::definition::CollisionType, (none, block));
