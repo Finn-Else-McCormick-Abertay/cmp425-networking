@@ -5,7 +5,7 @@
 
 World::World() : _name(), _authority(false), INetworked(construct_noinit) {}
 
-World::World(const str& name, bool authority) : _name(name), _authority(authority), INetworked(::network_id("world"_id, _name)) {}
+World::World(const str& name, bool authority) : _name(name), _authority(authority), INetworked(::network_id("world"_id, name)) {}
 
 World::World(World&& rhs) : _name(move(rhs._name)), _authority(rhs._authority), _levels(move(rhs._levels)), INetworked(move(rhs)) {}
 //World::World(const World& rhs) : _name(rhs._name), _authority(rhs._authority), _levels(rhs._levels), INetworked(construct_noinit) {}

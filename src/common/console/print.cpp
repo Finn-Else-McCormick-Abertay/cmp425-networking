@@ -11,9 +11,9 @@ void console_impl::print(
     fmt::print(
         "{}{}{}{}{} {}\n",
         styled("[", style_separator),
-        styled(type_name, style_title | emphasis::bold),
+        styled(type_name.c_str(), style_title | emphasis::bold),
         styled(owner_name.empty() ? "" : "|", style_separator),
-        styled(owner_name, style_title | emphasis::italic),
+        styled(owner_name.c_str(), style_title | emphasis::italic),
         styled("]", style_separator),
         styled(vformat(fmt, args), style_text)
     );

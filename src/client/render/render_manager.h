@@ -13,6 +13,7 @@
 class RenderManager { DECL_SINGLETON(RenderManager);
 public:
     DECL_MULTI_REGISTRY(IDrawable, Camera);
+    ~RenderManager();
 
     static void render();
 

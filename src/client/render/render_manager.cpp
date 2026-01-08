@@ -3,8 +3,15 @@
 #include <util/vec_convert.h>
 
 #include <typeinfo>
+#include <console.h>
 
 DEFINE_SINGLETON(RenderManager);
+
+static bool s_render_manager_deinitialised = false;
+
+RenderManager::~RenderManager() {
+    s_render_manager_deinitialised = true;
+}
 
 void RenderManager::Registry::__register(IDrawable& drawable) {
     if (!&inst()) return;
@@ -13,7 +20,7 @@ void RenderManager::Registry::__register(IDrawable& drawable) {
 void RenderManager::Registry::__unregister(IDrawable& drawable) {
     if (!&inst()) return;
     inst()._added_drawables.erase(&drawable);
-    inst()._removed_drawables.insert(&drawable);
+    if (!s_render_manager_deinitialised) inst()._removed_drawables.insert(&drawable);
 }
 
 void RenderManager::Registry::__register(Camera& camera) {

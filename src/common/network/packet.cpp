@@ -41,6 +41,9 @@ packet_id packet_id::from_str(const str& s) {
     str type = s.substr(0, meta_start);
     dyn_arr<str> args; for (auto arg : s.substr(meta_start + 1) | views::split(';') | ranges::to<dyn_arr<str>>()) args.emplace_back(arg);
     return packet_id(type, move(args));
+    /*if (auto meta_start = s.find('!'); meta_start != str::npos)
+        return packet_id(s.substr(0, meta_start), s.substr(meta_start + 1) | views::split(';') | ranges::to<dyn_arr<str>>());
+    return packet_id(s, {});*/
 }
 
 bool operator==(const packet_id& lhs, const packet_id& rhs) { return lhs.as_str() == rhs.as_str(); }

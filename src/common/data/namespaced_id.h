@@ -9,21 +9,32 @@
 class id {
 private: 
 public:
-    id(const str& nmspace, const str& name); id(const str& id); id(); id(const id&) = default;
+    constexpr id() : _namespace(), _name() {}
+    constexpr id(const str& nmspace, const str& name) : _namespace(nmspace), _name(name) {}
+    constexpr id(const str& id_str) : _namespace(find_namespace_and_name(id_str).first), _name(find_namespace_and_name(id_str).second) {}
+    constexpr id(const id& rhs) : id(rhs._namespace, rhs._name) {}
 
     const str& nmspace() const;
     const str& name() const;
 
     str to_str() const;
     
-    strong_ordering operator<=>(const id& rhs) const;
-    bool operator==(const id& rhs) const;
-
     id& operator=(const id& rhs);
+    
+    constexpr bool operator==(const id& rhs) const { return _namespace == rhs._namespace && _name == rhs._name; }
+    constexpr strong_ordering operator<=>(const id& rhs) const {
+        auto namespace_ordering = _namespace <=> rhs._namespace;
+        if (namespace_ordering == strong_ordering::less || namespace_ordering == strong_ordering::greater) return namespace_ordering;
+        return _name <=> rhs._name;
+    }
 private:
     str _namespace, _name;
     friend class glz::meta<id>;
-    static pair<str, str> find_namespace_and_name(const str& id_str); //id(pair<str,str>&& pair);
+    static constexpr pair<str, str> find_namespace_and_name(const str& id_str) {
+        if (id_str.empty()) return make_pair("", "");
+        if (auto divider = id_str.find("::"); divider != str::npos) return make_pair(id_str.substr(0, divider), id_str.substr(divider + 2));
+        return make_pair("default", id_str);
+    }
 };
 
 constexpr id const operator ""_id(const char* literal, size_t) { return { str(literal) }; }
