@@ -72,7 +72,14 @@ result<success_t, str> ActorManager::read_message(LogicalPacket&& packet) {
         auto& event = *event_arg; auto& ident = *ident_arg;
         
         if (event == "connected" || event == "existing") {
-            if (!inst()._players.contains(ident)) register_player(ident, ident == *NetworkManager::user_uid(), false, event == "existing");
+            
+            if (!inst()._players.contains(ident))
+                register_player(
+                    ident,
+                    NetworkManager::user_uid().transform([&ident](auto value) { return ident == value; }).value_or(false),
+                    false,
+                    event == "existing"
+                );
             return empty_success;
         }
         else if (event == "disconnected") {
