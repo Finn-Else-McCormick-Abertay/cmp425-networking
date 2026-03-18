@@ -66,17 +66,17 @@ result<LogicalPacket, str> ActorManager::get_requested_message(const packet_id& 
 }
 
 result<success_t, str> ActorManager::read_message(LogicalPacket&& packet) {
+    print<debug, ActorManager>("RECIEVED {} ({})", packet.id, NetworkManager::user_uid());
     if (packet.id.type() == "player") {
         auto event_arg = packet.id.get_arg(0); auto ident_arg = packet.id.get_arg(1);
         if (!event_arg) return err("Missing event arg."); else if (!ident_arg) return err("Missing player ident arg.");
         auto& event = *event_arg; auto& ident = *ident_arg;
         
         if (event == "connected" || event == "existing") {
-            
             if (!inst()._players.contains(ident))
                 register_player(
                     ident,
-                    NetworkManager::user_uid().transform([&ident](auto value) { return ident == value; }).value_or(false),
+                    !NetworkManager::user_uid().transform([&ident](auto value) { return ident == value; }).value_or(false),
                     false,
                     event == "existing"
                 );

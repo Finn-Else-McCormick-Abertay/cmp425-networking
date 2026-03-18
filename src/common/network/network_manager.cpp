@@ -87,13 +87,14 @@ void NetworkManager::connect(const SocketAddress& address, sf::Time timeout, boo
     auto socket = TcpSocket(); socket.setBlocking(blocking);
     auto status = socket.connect(address.ip, address.port, timeout);
     if (status == Socket::Status::Done) register_socket(move(socket));
-    //else print<error, NetworkManager>("Socket {} could not connect : {}", address, status);
+    else print<error, NetworkManager>("Socket {} could not connect : {}", address, status);
 }
 void NetworkManager::register_socket(sf::TcpSocket&& socket) {
     auto ip_address = socket.getRemoteAddress(); auto port = socket.getRemotePort();
     if (!ip_address || port == 0) return print<warning, NetworkManager>("Attempted to register unconnected socket ({}, {}).", ip_address, port);
     SocketAddress address { *ip_address, port };
-    socket.setBlocking(false); inst()._sockets[address] = move(socket);
+    socket.setBlocking(false);
+    inst()._sockets[address] = move(socket);
     print<network_info>("Connected to {}.", address);
 }
 
@@ -118,8 +119,13 @@ void NetworkManager::seek_server_connection() {
 
     if (_sockets.contains(*_server_address) && !_user_uid && !_awaiting_user_uid) {
         sf::Packet packet; packet << _username;
-        auto wrapped = wrap(network_id("lifecycle"_id, "request"), LogicalPacket("uid", _current_tick, move(packet)), MessageType::Lifecycle);
-        _awaiting_user_uid = send_packet(wrapped, _sockets.at(*_server_address));
+        auto logical_packet = LogicalPacket("uid", _current_tick, move(packet));
+        logical_packet.owner = network_id("lifecycle"_id, "request");
+        logical_packet.type = LogicalPacket::MessageType::Lifecycle;
+        send(logical_packet, *_server_address);
+        _awaiting_user_uid = true;
+        //auto wrapped = wrap(, , );
+        //_awaiting_user_uid = send_packet(wrapped, _sockets.at(*_server_address));
     }
 }
 
@@ -158,9 +164,12 @@ opt_cref<str> NetworkManager::try_set_uid(const SocketAddress& address, const st
 }
 
 void NetworkManager::clear_uid(const SocketAddress& address) {
+    //print<debug, NetworkManager>("Attempted to clear uid for {}. ({})", address, _socket_uids.contains(address));
+    //for (auto [socket, uid] : _socket_uids) print<debug, NetworkManager>(" - {} : {}", socket, uid);
     if (!_socket_uids.contains(address)) return;
-    // Destroy client's corresponding player
-    ActorManager::unregister_player(_socket_uids[address]);
+    #ifdef SERVER
+    ActorManager::unregister_player(_socket_uids[address], true);
+    #endif
     _socket_uids.erase(address);
 }
 
@@ -173,6 +182,8 @@ result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& add
     if (packet.id.type() == "uid") {
         if (is_request) {
             auto response_packet = LogicalPacket("uid", _current_tick);
+            response_packet.owner = network_id("lifecycle"_id, "answer");
+            response_packet.type = LogicalPacket::MessageType::Lifecycle;
 
             str requested_username; packet.packet >> requested_username;
             if (auto result = try_set_uid(address, requested_username)) {
@@ -184,8 +195,7 @@ result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& add
                 response_packet.id = packet_id("uid!failure;taken");
             }
 
-            auto wrapped = wrap(network_id("lifecycle"_id, "answer"), move(response_packet), MessageType::Lifecycle);
-            send_packet(wrapped, _sockets.at(address));
+            send(response_packet, address);
 
             // Update them on the already connected players
             for (auto& [_, uid] : inst()._socket_uids)
@@ -213,25 +223,59 @@ result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& add
     return err("Unhandled.");
 }
 
+void NetworkManager::append_packet_into(sf::Packet& sum_packet, LogicalPacket&& logical_packet) {
+    sum_packet << logical_packet.owner.to_str();
+    sum_packet << logical_packet.id.as_str();
+    sum_packet << (uint8)logical_packet.type;
+    sum_packet << (uint64)logical_packet.time;
+    sum_packet << (uint64)logical_packet.packet.getDataSize();
+    sum_packet.append(logical_packet.packet.getData(), logical_packet.packet.getDataSize());
+}
+
+void NetworkManager::handle_incoming_packet(const SocketAddress& address, LogicalPacket&& logical_packet) {
+    //print<network_info>("RECIEVED {} {} from {}", logical_packet.owner, logical_packet.id, address);
+    if (logical_packet.type == LogicalPacket::MessageType::Default) {
+        //print<debug, NetworkManager>("INCOMING {} {}", owner, logical_packet.id);
+        if (_networked_by_id.contains(logical_packet.owner))
+            _networked_by_id.at(logical_packet.owner)->read(move(logical_packet));
+        else print<error, NetworkManager>("Recieved packet directed to non-existent network id '{}'.", logical_packet.owner);
+    }
+    else if (logical_packet.type == LogicalPacket::MessageType::Request) {
+        print<debug, NetworkManager>("ANSWER REQUEST {} {}", logical_packet.owner, logical_packet.id);
+        _outgoing_broadcasts.emplace_back(logical_packet.owner, logical_packet.id, logical_packet.time, address);
+    }
+    else if (logical_packet.type == LogicalPacket::MessageType::Lifecycle) {
+        auto result = handle_lifecycle(address, logical_packet.owner, move(logical_packet));
+        if (!result) print<error, NetworkManager>("Failed lifecycle request ({},{}) for {}. {}", logical_packet.owner, logical_packet.id, address, result.error());
+    }
+    else print<warning, NetworkManager>("Unhandled message type {}.", std::to_underlying(logical_packet.type));
+}
+
 void NetworkManager::handle_incoming(const SocketAddress& address, TcpSocket& socket) {
+    //print<debug, NetworkManager>("HANDLE INCOMING from {}", address);
     sf::Packet packet; auto status = socket.receive(packet);
     if (status == Socket::Status::Done) {
-        auto [owner, logical_packet, type] = unwrap(move(packet));
-        if (type == MessageType::Default) {
-            if (_networked_by_id.contains(owner)) _networked_by_id.at(owner)->read(move(logical_packet));
-            //else print<error, NetworkManager>("Recieved packet directed to non-existent network id '{}'.", owner);
+        uint16 packet_count; packet >> packet_count;
+        for (int i = 0; i < packet_count; ++i) {
+            str owner_str; packet >> owner_str;
+            str id_str; packet >> id_str;
+            uint8 type; packet >> type;
+            uint64 time; packet >> time;
+            uint64 data_size; packet >> data_size;
+            uint8 data[data_size];
+            for (int j = 0; j < data_size; ++j) packet >> data[j];
+
+            LogicalPacket logical_packet = LogicalPacket(id_str, time);
+            logical_packet.owner = network_id::from_str(owner_str);
+            logical_packet.type = (LogicalPacket::MessageType)type;
+            logical_packet.packet.append(data, data_size);
+
+            handle_incoming_packet(address, move(logical_packet));
         }
-        else if (type == MessageType::Request) {
-            _outgoing_broadcasts.emplace_back(owner, logical_packet.id, logical_packet.time, address);
-        }
-        else if (type == MessageType::Lifecycle) {
-            auto result = handle_lifecycle(address, owner, move(logical_packet));
-            if (!result) print<error, NetworkManager>("Failed lifecycle request ({},{}) for {}. {}", owner, logical_packet.id, address, result.error());
-        }
-        else print<warning, NetworkManager>("Unhandled message type {}.", std::to_underlying(type));
     }
     else if (status == Socket::Status::Disconnected) {
         print<network_info>("Lost connection with {}.", address);
+        clear_uid(address);
         socket.disconnect();
         inst()._sockets.erase(address);
     }
@@ -240,17 +284,24 @@ void NetworkManager::handle_incoming(const SocketAddress& address, TcpSocket& so
 }
 
 void NetworkManager::handle_outgoing(INetworked& networked) {
+    auto net_id = networked.network_id();
     for (auto& message : networked.outstanding()) {
+        //print<network_info>("OUTGOING {} {}", net_id, message.id);
         message.time = _current_tick;
-        send_packet(wrap(networked.network_id(), move(message), MessageType::Default));
+        message.owner = net_id;
+        auto pack_id = message.id;
+
+        send(move(message), nullopt);
     }
 }
 
 void NetworkManager::request(const network_id& owner, const packet_id& packet_id, const opt<SocketAddress>& target) {
+    print<debug, NetworkManager>("REQUEST {} {} {}", owner, packet_id, target);
     inst()._outgoing_requests.emplace_back(owner, packet_id, inst()._current_tick, target);
 }
 
 void NetworkManager::broadcast(const network_id& owner, const packet_id& packet_id, const opt<SocketAddress>& target) {
+    print<debug, NetworkManager>("BROADCAST {} {} {}", owner, packet_id, target);
     inst()._outgoing_broadcasts.emplace_back(owner, packet_id, inst()._current_tick, target);
 }
 
@@ -276,8 +327,11 @@ void NetworkManager::network_tick(uint64 elapsed_ticks) {
     // Outgoing requests
     for (auto it = inst()._outgoing_requests.begin(), it_next = it; it != inst()._outgoing_requests.end(); it = it_next) {
         ++it_next; auto [netid, packid, time, target] = *it;
-        if (inst().send_packet(wrap(netid, LogicalPacket(packid, inst()._current_tick), MessageType::Request), target))
-            it_next = inst()._outgoing_requests.erase(it);
+        auto logical_packet = LogicalPacket(packid, inst()._current_tick);
+        logical_packet.owner = netid;
+        logical_packet.type = LogicalPacket::MessageType::Request;
+        inst().send(logical_packet, target);
+        it_next = inst()._outgoing_requests.erase(it);
     }
 
     // Outgoing broadcasts / request answers
@@ -294,47 +348,73 @@ void NetworkManager::network_tick(uint64 elapsed_ticks) {
         }).value();
         answer->time = inst()._current_tick;
 
-        if (inst().send_packet(wrap(netid, move(pack), MessageType::Default), address))
-            it_next = inst()._outgoing_broadcasts.erase(it);
+        pack.owner = netid;
+
+        inst().send(pack, address);
+        it_next = inst()._outgoing_broadcasts.erase(it);
     }
 
     // Ticked messages
     for (auto networked : inst()._networked) inst().handle_outgoing(*networked);
+
+    // -- Sum up messages sent this tick --
+
+    // Sum together packets aimed at all sockets
+    auto all_address = SocketAddress(sf::IpAddress::Any, Socket::AnyPort);
+    size_t shared_message_count = 0;
+    sf::Packet shared_sum_packet;
+    if (inst()._accumulated_packets.contains(all_address)) {
+        auto& packet_array = inst()._accumulated_packets.at(all_address);
+        shared_message_count = packet_array.size();
+        for (auto& logical_packet : packet_array) append_packet_into(shared_sum_packet, move(logical_packet));
+    }
+
+    // Send all summed packets
+    for (auto& [address, socket] : inst()._sockets) {
+        uint16 packet_count = shared_message_count;
+        dyn_arr<LogicalPacket>* specific_arr = nullptr;
+        if (inst()._accumulated_packets.contains(address)) {
+            specific_arr = &inst()._accumulated_packets.at(address);
+            packet_count += specific_arr->size();
+        }
+        // Skip if no messages this tick
+        if (packet_count == 0) continue;
+
+        sf::Packet sum_packet;
+        sum_packet << packet_count;
+
+        // Append shared messages
+        if (shared_sum_packet.getData() != nullptr)
+            sum_packet.append(shared_sum_packet.getData(), shared_sum_packet.getDataSize());
+        
+        // Append specific messages
+        if (specific_arr != nullptr)
+            for (auto& specific_packet : *specific_arr) append_packet_into(sum_packet, move(specific_packet));
+        
+        Socket::Status status;
+        do status = socket.send(sum_packet); while (status == Socket::Status::Partial);
+        
+        if (status != Socket::Status::Done) print<error, NetworkManager>("Failed to send summed packet to {} : {}", address, status);
+        //else print<debug, NetworkManager>("Sent summed packet to {}.", address);
+    }
+    // Clear accumulated packets
+    inst()._accumulated_packets.clear();
 }
 
-sf::Packet NetworkManager::wrap(const network_id& owner, LogicalPacket&& message, MessageType type) {
-    sf::Packet wrapped;
-    wrapped << message.time;
-    wrapped << (int)type;
-    wrapped << owner.to_str();
-    wrapped << message.id.as_str();
-    wrapped.append(message.packet.getData(), message.packet.getDataSize());
-    return wrapped;
+void NetworkManager::send(const LogicalPacket& packet, const opt<SocketAddress>& address_opt) {
+    auto address = address_opt.value_or(SocketAddress(sf::IpAddress::Any, Socket::AnyPort));
+    //print<debug, NetworkManager>("SEND {} {} to {}", packet.owner, packet.id, address);
+
+    auto [it, is_new] = _accumulated_packets.try_emplace(address);
+    it->second.emplace_back(packet);
 }
 
-tuple<network_id, LogicalPacket, NetworkManager::MessageType> NetworkManager::unwrap(sf::Packet&& packet) {
-    uint64 time; packet >> time;
-    int type; packet >> type;
-    str owner_str, msg_id; packet >> owner_str; packet >> msg_id;
-    return make_tuple(network_id::from_str(owner_str), LogicalPacket(msg_id, time, move(packet)), (MessageType)type);
-}
+void NetworkManager::send(LogicalPacket&& packet, const opt<SocketAddress>& address_opt) {
+    auto address = address_opt.value_or(SocketAddress(sf::IpAddress::Any, Socket::AnyPort));
+    //print<debug, NetworkManager>("SEND {} {} to {}", packet.owner, packet.id, address);
 
-bool NetworkManager::send_packet(sf::Packet& packet, TcpSocket& socket) {
-    Socket::Status status;
-    do status = socket.send(packet); while (status == Socket::Status::Partial);
-    return status == Socket::Status::Done;
-}
-
-bool NetworkManager::send_packet(sf::Packet&& packet, const opt<SocketAddress>& target) {
-    if (!target) return send_packet(move(packet));
-    if (!_sockets.contains(*target)) return false;
-    return send_packet(packet, _sockets.at(*target));
-}
-
-bool NetworkManager::send_packet(sf::Packet&& packet) {
-    bool failed = false;
-    for (auto& [address, socket] : _sockets) failed |= !send_packet(packet, socket);
-    return !failed;
+    auto [it, is_new] = _accumulated_packets.try_emplace(address);
+    it->second.emplace_back(move(packet));
 }
 
 str NetworkManager::debug_message() {

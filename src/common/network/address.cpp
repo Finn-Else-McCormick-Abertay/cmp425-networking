@@ -22,7 +22,13 @@ opt<SocketAddress> SocketAddress::resolve(const str& val) {
     if (!ip_opt) return nullopt;
 
     uint32 port = Socket::AnyPort;
-    if (split.size() == 2) port = str_to<uint32>(split.at(1));
+    if (split.size() == 2) {
+        auto port_arg = split.at(1);
+        if (port_arg == "Any" || port_arg == "any")
+            port = Socket::AnyPort;
+        else
+            port = str_to<uint32>(port_arg);
+    }
 
     return SocketAddress(*ip_opt, port);
 }

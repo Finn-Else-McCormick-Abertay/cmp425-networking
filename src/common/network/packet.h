@@ -4,6 +4,7 @@
 #include <prelude/opt.h>
 #include <prelude/containers.h>
 #include <SFML/Network/Packet.hpp>
+#include <network/network_id.h>
 
 class packet_id {
 public:
@@ -36,9 +37,14 @@ template <> struct std::hash<packet_id> { size_t operator()(const packet_id& id)
 inline auto format_as(const packet_id& id) { return id.as_str(); }
 
 struct LogicalPacket {
+    enum class MessageType { Default, Request, Lifecycle };
+
     packet_id id;
     uint64 time;
     sf::Packet packet;
+
+    network_id owner = network_id(nullid, "");
+    MessageType type = MessageType::Default;
     
     LogicalPacket();
     explicit LogicalPacket(const packet_id&, uint64 time = 0, sf::Packet&& = sf::Packet());

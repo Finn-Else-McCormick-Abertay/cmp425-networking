@@ -29,25 +29,26 @@ void PlayerActor::draw(sf::RenderTarget& target, draw_layer layer) {
 #endif
 
 dyn_arr<LogicalPacket> PlayerActor::get_outstanding_messages() {
+    //return {};
     #ifdef CLIENT
     if (_listen_only) return {};
     #endif
     //print<debug>("Sent motion data {}", pos());
     LogicalPacket update(packet_id("motion"));
-    update.packet << pos().x << pos().y << velocity().x << velocity().y << acceleration().x << acceleration().y;
+    //update.packet << pos().x << pos().y << velocity().x << velocity().y << acceleration().x << acceleration().y;
     return { move(update) };
 }
 
 result<success_t, str> PlayerActor::read_message(LogicalPacket&& packet) {
     if (packet.id.type() == "motion") {
-        float pos_x, pos_y, vel_x, vel_y, acc_x, acc_y;
+        //float pos_x, pos_y, vel_x, vel_y, acc_x, acc_y;
 
-        packet.packet >> pos_x >> pos_y >> vel_x >> vel_y >> acc_x >> acc_y;
+        //packet.packet >> pos_x >> pos_y >> vel_x >> vel_y >> acc_x >> acc_y;
         
         //print<debug>("Recieved motion data {} {}", pos_x, pos_y);
 
-        set_pos(fvec2(pos_x, pos_y));
-        set_velocity(fvec2(vel_x, vel_y));
+        //set_pos(fvec2(pos_x, pos_y));
+        //set_velocity(fvec2(vel_x, vel_y));
         //set_acceleration(fvec2(acc_x, acc_y));
         return empty_success;
     }

@@ -47,19 +47,14 @@ private:
     
     void seek_server_connection();
     void seek_client_connection();
+
+    static void append_packet_into(sf::Packet& sum, LogicalPacket&&);
     
     void handle_incoming(const SocketAddress&, TcpSocket&);
+    void handle_incoming_packet(const SocketAddress&, LogicalPacket&&);
     void handle_outgoing(INetworked&);
 
     result<success_t, str> handle_lifecycle(const SocketAddress&, const network_id&, LogicalPacket&&);
-    
-    bool send_packet(sf::Packet&, TcpSocket&);
-    bool send_packet(sf::Packet&&, const opt<SocketAddress>&);
-    bool send_packet(sf::Packet&&);
-    
-    enum class MessageType { Default, Request, Lifecycle };
-    static sf::Packet wrap(const network_id& owner, LogicalPacket&&, MessageType);
-    static tuple<network_id, LogicalPacket, MessageType> unwrap(sf::Packet&&);
     
     uint64 _current_tick;
     set<INetworked*> _networked; hashmap<network_id, INetworked*> _networked_by_id;
@@ -71,6 +66,10 @@ private:
 
     bstmap<SocketAddress, TcpSocket> _sockets; bstmap<SocketAddress, str> _socket_uids;
     opt<TcpListener> _client_listener; opt<SocketAddress> _server_address;
+
+    bstmap<SocketAddress, dyn_arr<LogicalPacket>> _accumulated_packets;
+    void send(const LogicalPacket&, const opt<SocketAddress>&);
+    void send(LogicalPacket&&, const opt<SocketAddress>&);
 
     opt_cref<str> try_set_uid(const SocketAddress&, const str& requested = "", bool try_fallback = true);
     void clear_uid(const SocketAddress&);
