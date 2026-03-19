@@ -87,7 +87,7 @@ void NetworkManager::connect(const SocketAddress& address, sf::Time timeout, boo
     auto socket = TcpSocket(); socket.setBlocking(blocking);
     auto status = socket.connect(address.ip, address.port, timeout);
     if (status == Socket::Status::Done) register_socket(move(socket));
-    else print<error, NetworkManager>("Socket {} could not connect : {}", address, status);
+    //else print<error, NetworkManager>("Socket {} could not connect : {}", address, status);
 }
 void NetworkManager::register_socket(sf::TcpSocket&& socket) {
     auto ip_address = socket.getRemoteAddress(); auto port = socket.getRemotePort();

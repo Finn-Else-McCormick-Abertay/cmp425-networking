@@ -33,7 +33,7 @@ dyn_arr<LogicalPacket> PlayerActor::get_outstanding_messages() {
     #ifdef CLIENT
     if (_listen_only) return {};
     #endif
-    //print<debug>("Sent motion data {}", pos());
+    //print<debug, PlayerActor>("Sent motion data");
     LogicalPacket update(packet_id("motion"));
     //update.packet << pos().x << pos().y << velocity().x << velocity().y << acceleration().x << acceleration().y;
     return { move(update) };
@@ -41,6 +41,7 @@ dyn_arr<LogicalPacket> PlayerActor::get_outstanding_messages() {
 
 result<success_t, str> PlayerActor::read_message(LogicalPacket&& packet) {
     if (packet.id.type() == "motion") {
+        //print<debug, PlayerActor>("Recieved motion data");
         //float pos_x, pos_y, vel_x, vel_y, acc_x, acc_y;
 
         //packet.packet >> pos_x >> pos_y >> vel_x >> vel_y >> acc_x >> acc_y;

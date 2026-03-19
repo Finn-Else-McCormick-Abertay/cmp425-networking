@@ -29,6 +29,10 @@ void GameLoop::tick() {
         _elapsed_ticks++;
     }
 
-    // Tick network
-    NetworkManager::network_tick(_elapsed_ticks);
+    _network_tick_remainder += delta_time.toDuration();
+    if (_network_tick_remainder >= NETWORK_MIN_TIMESTEP) {
+        // Tick network
+        NetworkManager::network_tick(_elapsed_ticks);
+        _network_tick_remainder = 0ms;
+    }
 }
