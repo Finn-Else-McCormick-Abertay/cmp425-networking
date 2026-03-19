@@ -9,9 +9,15 @@ class PlayerActor : public INetworkedActor {
 public:
     PlayerActor(PlayerActor&&);
 
+    const str& ident() const;
+
+    bool is_authority() const;
+    void update_authority_state();
+
 private:
     str _player_ident;
-    PlayerActor(const str& ident, bool listen_only); friend class ActorManager;
+    bool _authority;
+    PlayerActor(const str& ident); friend class ActorManager;
     
     static constexpr frect2 DEFAULT_RECT = { { -5, -20 }, { 10, 20 } };
     
@@ -22,5 +28,6 @@ private:
     virtual dyn_arr<LogicalPacket> get_outstanding_messages() override;
     virtual result<success_t, str> read_message(LogicalPacket&&) override;
 
-    bool _listen_only;
+    static constexpr float VALID_DIFF_EPSILON = 0.000001f;
+    fvec2 _prev_sent_position; fvec2 _prev_sent_velocity; fvec2 _prev_sent_accel;
 };

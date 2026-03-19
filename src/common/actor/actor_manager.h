@@ -16,11 +16,13 @@ public:
 
     static void init();
 
-    static PlayerActor& register_player(const str& ident, bool authority, bool broadcast = true, bool fail_quiet = false);
+    static PlayerActor& register_player(const str& ident, bool broadcast = true, bool fail_quiet = false);
     static void unregister_player(const str& ident, bool broadcast = true, bool fail_quiet = false);
     static opt_ref<PlayerActor> get_player_actor(const str& ident);
 
     static void tick(float delta);
+
+    static void update_player_authority_states();
 
 private:
     set<IActor*> _known_actors;

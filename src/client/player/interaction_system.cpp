@@ -40,10 +40,11 @@ void player::InteractionSystem::tick(float dt) {
     if (player_opt) {
         PlayerActor& player = *player_opt;
 
-        float accel = 1.f;
+        float accel = 100.f;
         fvec2 move = actions::move.value();
         move.y *= -1;
         
-        player.set_acceleration(move * accel);
+        //player.set_acceleration(move * accel);
+        player.set_velocity(move * accel);
     }
 }

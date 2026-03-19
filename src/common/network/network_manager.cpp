@@ -157,7 +157,7 @@ opt_cref<str> NetworkManager::try_set_uid(const SocketAddress& address, const st
     // As it stands this method should only ever run in server mode but yknow. Just in case.
     #ifdef SERVER
     // Create client's corresponding player
-    ActorManager::register_player(uid, false, true);
+    ActorManager::register_player(uid, true);
     #endif
 
     return cref(uid);
@@ -214,6 +214,7 @@ result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& add
             }
             str validated_uid; packet.packet >> validated_uid;
             _user_uid = validated_uid;
+            ActorManager::update_player_authority_states();
             print<network_info, NetworkManager>("Registered with server as {}.", *_user_uid);
             return empty_success;
         }
@@ -306,7 +307,7 @@ void NetworkManager::broadcast(const network_id& owner, const packet_id& packet_
 }
 
 void NetworkManager::network_tick(uint64 elapsed_ticks) {
-    uint64 tick_delta = elapsed_ticks - inst()._current_tick;
+    //uint64 tick_delta = elapsed_ticks - inst()._current_tick;
     inst()._current_tick = elapsed_ticks;
 
     // -- Seek connections --

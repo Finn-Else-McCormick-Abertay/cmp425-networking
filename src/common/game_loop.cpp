@@ -25,14 +25,16 @@ void GameLoop::tick() {
 
     for (uint i = 0; i < fixed_rate_steps; ++i) {
         // (The physics doesn't actually run in the fixed tick cause I ran into problems with it too late to fix them)
-        SystemManager::fixed_tick(_elapsed_ticks);
-        _elapsed_ticks++;
+        SystemManager::fixed_tick(_elapsed_fixed_ticks);
+        _elapsed_fixed_ticks++;
     }
 
-    _network_tick_remainder += delta_time.toDuration();
-    if (_network_tick_remainder >= NETWORK_MIN_TIMESTEP) {
-        // Tick network
-        NetworkManager::network_tick(_elapsed_ticks);
-        _network_tick_remainder = 0ms;
+    // Tick network
+    _network_tick_delta += delta_time.toDuration();
+    if (_network_tick_delta >= NETWORK_MIN_TIMESTEP) {
+        NetworkManager::network_tick(_elapsed_network_ticks);
+        _elapsed_network_ticks++;
+        //_network_tick_delta -= NETWORK_MIN_TIMESTEP;
+        _network_tick_delta = 0ms;
     }
 }

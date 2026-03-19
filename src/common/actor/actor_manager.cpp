@@ -22,20 +22,16 @@ void ActorManager::init() {
 void ActorManager::tick(float delta) {
     for (auto actor : inst()._known_actors) {
         actor->set_velocity(actor->velocity() + actor->acceleration() * delta);
-        actor->set_pos(actor->pos() + actor->velocity() + delta);
+        actor->set_pos(actor->pos() + actor->velocity() * delta);
     }
 }
 
 // Something's wrong here. I don't think try emplace works the way I think it does. Hacking around it elsewhere
-PlayerActor& ActorManager::register_player(const str& ident, bool authority, bool broadcast, bool fail_quiet) {
-    #ifdef SERVER
-    authority = true;
-    #endif
-
-    auto [it, is_new] = inst()._players.try_emplace(ident, move(PlayerActor(ident, !authority)));
+PlayerActor& ActorManager::register_player(const str& ident, bool broadcast, bool fail_quiet) {
+    auto [it, is_new] = inst()._players.try_emplace(ident, PlayerActor(ident));
     if (is_new && broadcast) NetworkManager::broadcast(inst().network_id(), packet_id("player", { "connected", ident }));
 
-    if (is_new) print<info, ActorManager>("Registered player '{}' : {}.", ident, authority);
+    if (is_new) print<info, ActorManager>("Registered player '{}'.", ident);
     else if (!fail_quiet) print<warning, ActorManager>("register_player called for previously registered player '{}'.", ident);
     return it->second;
 }
@@ -44,6 +40,10 @@ void ActorManager::unregister_player(const str& ident, bool broadcast, bool fail
     if (!inst()._players.erase(ident) && !fail_quiet) return print<warning, ActorManager>("unregister_player called for nonexistent player '{}'.", ident);
     if (broadcast) NetworkManager::broadcast(inst().network_id(), packet_id("player", { "disconnected", ident }));
     print<info, ActorManager>("Unregistered player '{}'.", ident);
+}
+
+void ActorManager::update_player_authority_states() {
+    for (auto& [_, player] : inst()._players) player.update_authority_state();
 }
 
 opt_ref<PlayerActor> ActorManager::get_player_actor(const str& ident) {
@@ -73,13 +73,7 @@ result<success_t, str> ActorManager::read_message(LogicalPacket&& packet) {
         auto& event = *event_arg; auto& ident = *ident_arg;
         
         if (event == "connected" || event == "existing") {
-            if (!inst()._players.contains(ident))
-                register_player(
-                    ident,
-                    !NetworkManager::user_uid().transform([&ident](auto value) { return ident == value; }).value_or(false),
-                    false,
-                    event == "existing"
-                );
+            if (!inst()._players.contains(ident)) register_player(ident, false, event == "existing");
             return empty_success;
         }
         else if (event == "disconnected") {
