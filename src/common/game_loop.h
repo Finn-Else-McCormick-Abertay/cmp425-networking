@@ -16,7 +16,7 @@ public:
     static constexpr chrono::microseconds FIXED_TIMESTEP = 16ms;
     
     // Set a minimum time between network ticks to avoid the sockets getting overwhelmed
-    static constexpr chrono::microseconds NETWORK_MIN_TIMESTEP = 5ms;
+    static constexpr chrono::microseconds NETWORK_MIN_TIMESTEP = 4ms;
 private:
     sf::Clock _clock;
     chrono::microseconds _fixed_tick_remainder;
