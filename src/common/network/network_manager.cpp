@@ -219,6 +219,10 @@ result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& add
             return empty_success;
         }
     }
+    else if (packet.id.type() == "sync") {
+        _current_tick = packet.time;
+        return empty_success;
+    }
     else return err(fmt::format("Unknown packet type '{}'.", packet.id.type()));
 
     return err("Unhandled.");
@@ -308,7 +312,17 @@ void NetworkManager::broadcast(const network_id& owner, const packet_id& packet_
 
 void NetworkManager::network_tick(uint64 elapsed_ticks) {
     //uint64 tick_delta = elapsed_ticks - inst()._current_tick;
-    inst()._current_tick = elapsed_ticks;
+    //inst()._current_tick = elapsed_ticks;
+    ++inst()._current_tick;
+
+    #ifdef SERVER
+    if (inst()._current_tick % 20 == 0) {
+        auto sync_packet = LogicalPacket("sync", inst()._current_tick);
+        sync_packet.owner = network_id("lifecycle"_id, "answer");
+        sync_packet.type = LogicalPacket::MessageType::Lifecycle;
+        inst().send(move(sync_packet), nullopt);
+    }
+    #endif
 
     // -- Seek connections --
     #ifdef CLIENT
@@ -328,7 +342,7 @@ void NetworkManager::network_tick(uint64 elapsed_ticks) {
     // Outgoing requests
     for (auto it = inst()._outgoing_requests.begin(), it_next = it; it != inst()._outgoing_requests.end(); it = it_next) {
         ++it_next; auto [netid, packid, time, target] = *it;
-        auto logical_packet = LogicalPacket(packid, inst()._current_tick);
+        auto logical_packet = LogicalPacket(packid, time);
         logical_packet.owner = netid;
         logical_packet.type = LogicalPacket::MessageType::Request;
         inst().send(logical_packet, target);
@@ -347,7 +361,7 @@ void NetworkManager::network_tick(uint64 elapsed_ticks) {
             packet.packet << "unhandled";
             return make_opt(move(packet));
         }).value();
-        answer->time = inst()._current_tick;
+        answer->time = time;
 
         pack.owner = netid;
 
@@ -422,6 +436,7 @@ str NetworkManager::debug_message() {
     return fmt::format("{}", fmt::join(dyn_arr<str>{
         fmt::format("Username: {} | UID: {}", inst()._username, inst().user_uid().value_or("null")),
         fmt::format("Server: {}", inst()._server_address),
-        fmt::format("Networked Object Ids: {}", fmt::join(views::keys(inst()._networked_by_id), ", "))
+        fmt::format("Networked Object Ids: {}", fmt::join(views::keys(inst()._networked_by_id), ", ")),
+        fmt::format("Current Tick: {}", inst()._current_tick)
     }, "\n"));
 }
