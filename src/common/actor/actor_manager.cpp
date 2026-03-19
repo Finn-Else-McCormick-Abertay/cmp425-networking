@@ -1,6 +1,7 @@
 #include "actor_manager.h"
 
 #include <network/network_manager.h>
+#include <game_loop.h>
 
 DEFINE_SINGLETON(ActorManager);
 
@@ -18,8 +19,8 @@ void ActorManager::init() {
     inst();
 }
 
-// This is a bad hack to get around the update order and make the physics work cause I've just so completely run out of time
-void ActorManager::tick(float delta) {
+void ActorManager::fixed_tick(uint64 elapsed_ticks) {
+    auto delta = GameLoop::FIXED_TIMESTEP / 1.0s;
     for (auto actor : inst()._known_actors) {
         actor->set_velocity(actor->velocity() + actor->acceleration() * delta);
         actor->set_pos(actor->pos() + actor->velocity() * delta);

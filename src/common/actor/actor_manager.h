@@ -7,10 +7,11 @@
 #include <actor/actor.h>
 #include <actor/player_actor.h>
 #include <network/networked.h>
+#include <system/system.h>
 
 class PhysicsSystem;
 
-class ActorManager : INetworked { DECL_SINGLETON_WITH_CONSTRUCTOR(ActorManager);
+class ActorManager : INetworked, IFixedTickingSystem { DECL_SINGLETON_WITH_CONSTRUCTOR(ActorManager);
 public:
     DECL_REGISTRY(IActor);
 
@@ -20,9 +21,9 @@ public:
     static void unregister_player(const str& ident, bool broadcast = true, bool fail_quiet = false);
     static opt_ref<PlayerActor> get_player_actor(const str& ident);
 
-    static void tick(float delta);
-
     static void update_player_authority_states();
+    
+    virtual void fixed_tick(uint64 elapsed_ticks) override;
 
 private:
     set<IActor*> _known_actors;
