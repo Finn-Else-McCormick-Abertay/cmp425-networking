@@ -24,6 +24,9 @@ const frect2& IActor::global_rect() const {
     return _global_rect;
 }
 
+bool IActor::grounded() const { return _grounded; }
+void IActor::set_grounded(bool grounded) { _grounded = grounded; }
+
 #ifdef CLIENT
 dyn_arr<draw_layer> IActor::draw_layers() const { return { layers::actor }; }
 void IActor::draw(sf::RenderTarget& target, draw_layer layer) {

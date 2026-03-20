@@ -46,21 +46,24 @@ dyn_arr<LogicalPacket> PlayerActor::get_outstanding_messages() {
 
     auto pos_diff = abs(length2(_prev_sent_position - pos()));
     auto vel_diff = abs(length2(_prev_sent_velocity - velocity()));
-    auto accel_diff = abs(length2(_prev_sent_accel - acceleration()));
+    //auto accel_diff = abs(length2(_prev_sent_accel - acceleration()));
 
-    if (pos_diff < VALID_DIFF_EPSILON && vel_diff < VALID_DIFF_EPSILON && accel_diff < VALID_DIFF_EPSILON) return {};
+    if (pos_diff < VALID_DIFF_EPSILON &&
+        vel_diff < VALID_DIFF_EPSILON /*&&
+        accel_diff < VALID_DIFF_EPSILON*/
+    ) return {};
 
     _prev_sent_position = pos();
     _prev_sent_velocity = velocity();
-    _prev_sent_accel = acceleration();
+    //_prev_sent_accel = acceleration();
 
     //print<debug, PlayerActor>("Diff {} {} {}", pos_diff, vel_diff, accel_diff);
 
-    auto& pos_send = pos(); auto& vel_send = velocity(); auto& accel_send = acceleration();
+    auto& pos_send = pos(); auto& vel_send = velocity(); //auto& accel_send = acceleration();
 
     //print<debug, PlayerActor>("Sent motion data {} {} {}", pos_send, vel_send, accel_send);
     LogicalPacket update(packet_id("motion"));
-    update.packet << pos_send.x << pos_send.y << vel_send.x << vel_send.y << accel_send.x << accel_send.y;
+    update.packet << pos_send.x << pos_send.y << vel_send.x << vel_send.y;// << accel_send.x << accel_send.y;
     return { move(update) };
 }
 
@@ -70,15 +73,15 @@ result<success_t, str> PlayerActor::read_message(LogicalPacket&& packet) {
         if (_authority) return empty_success;
         #endif
 
-        float pos_x, pos_y, vel_x, vel_y, acc_x, acc_y;
+        float pos_x, pos_y, vel_x, vel_y;//, acc_x, acc_y;
 
-        packet.packet >> pos_x >> pos_y >> vel_x >> vel_y >> acc_x >> acc_y;
+        packet.packet >> pos_x >> pos_y >> vel_x >> vel_y;// >> acc_x >> acc_y;
         
         //print<debug>("Recieved motion data {} {}", pos_x, pos_y);
 
         set_pos(fvec2(pos_x, pos_y));
         set_velocity(fvec2(vel_x, vel_y));
-        set_acceleration(fvec2(acc_x, acc_y));
+        //set_acceleration(fvec2(acc_x, acc_y));
         return empty_success;
     }
     return err("");

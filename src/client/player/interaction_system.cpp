@@ -36,11 +36,22 @@ void player::InteractionSystem::tick(float dt) {
     if (player_opt) {
         PlayerActor& player = *player_opt;
 
-        float speed = 100.f;
-        fvec2 move = actions::move.value();
-        move.y *= -1;
-        
-        //player.set_acceleration(move * accel);
-        player.set_velocity(move * speed);
+        float move_speed = 100.f;
+        if (actions::run.down()) move_speed = 200.f;
+
+        fvec2 move_vec = actions::move.value();
+        move_vec.y = 0;
+        //move_vec.y *= -1;
+        move_vec *= move_speed;
+
+        float gravity = 32.f * (float)TILE_SIZE; // Assuming 1 tile = 1 foot
+        if (actions::jump.down()) gravity *= 0.5;
+        fvec2 gravity_vec = fvec2(0, gravity);
+
+        player.set_acceleration(move_vec + gravity_vec);
+
+        if (actions::jump.just_pressed() && player.grounded()) {
+            player.set_velocity(fvec2(player.velocity().x, -140.f));
+        }
     }
 }

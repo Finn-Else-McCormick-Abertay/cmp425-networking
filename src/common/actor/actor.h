@@ -22,6 +22,9 @@ public:
     
     const frect2& local_rect() const;
     const frect2& global_rect() const;
+
+    bool grounded() const;
+    void set_grounded(bool);
 protected:
     IActor(const id&); virtual ~IActor();
     
@@ -35,6 +38,7 @@ protected:
 private:
     id _type_id;
     fvec2 _pos{0}, _velocity{0}, _accel{0}; frect2 _local_rect;
+    bool _grounded = false;
     // Cache global rect as it will need to be called very often during collision checks
     mutable frect2 _global_rect; mutable bool _global_rect_dirty = true;
 };

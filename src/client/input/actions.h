@@ -22,6 +22,9 @@ namespace actions {
     INPUT_ACTION(select, bool);
     INPUT_ACTION(back, bool);
     
+    INPUT_ACTION(jump, bool);
+    INPUT_ACTION(run, bool);
+    
     INPUT_ACTION(move, fvec2,
         .value_sums = {
             { "_horizontal_move", mod::juggle::pos_x },

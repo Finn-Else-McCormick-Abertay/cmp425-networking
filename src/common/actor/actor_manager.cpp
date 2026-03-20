@@ -6,9 +6,12 @@
 #include <data/data_manager.h>
 #include <game_loop.h>
 #include <console.h>
+#include <vmath.hpp/vmath_fun.hpp>
 #ifdef CLIENT
 #include <render/render_manager.h>
 #endif
+
+using namespace vmath_hpp;
 
 DEFINE_SINGLETON(ActorManager);
 
@@ -30,6 +33,7 @@ void ActorManager::fixed_tick(uint64 elapsed_ticks) {
     auto level_opt = WorldManager::level("world"_id);
 
     auto delta = GameLoop::FIXED_TIMESTEP / 1.0s;
+
     for (auto actor : inst()._known_actors) {
         actor->set_velocity(actor->velocity() + actor->acceleration() * delta);
         actor->set_pos(actor->pos() + actor->velocity() * delta);
@@ -65,23 +69,46 @@ void ActorManager::fixed_tick(uint64 elapsed_ticks) {
 
                         if (overlap(actor->global_rect(), tile_global_rect)) {
                             fvec2 overlap_amount = overlap_by(actor->global_rect(), tile_global_rect);
-                            fvec2 correction = fvec2();
+                            fvec2 position_correction = fvec2();
+                            fvec2 velocity_correction = fvec2();
                             if (overlap_amount.x < overlap_amount.y) {
-                                correction.x = overlap_amount.x * -1;
-                                if (actor->pos().x > tile_global_origin.x + (TILE_SIZE / 2))
-                                    correction.x *= -1;
+                                // Prevent getting stuck while sliding on floors
+                                if (overlap_amount.y < 2) continue;
+
+                                bool is_to_right = actor->pos().x > tile_global_origin.x + (TILE_SIZE / 2);
+
+                                position_correction.x = overlap_amount.x * -1;
+                                if (is_to_right) position_correction.x *= -1;
+
+                                if ((is_to_right && actor->velocity().x < 0) || (!is_to_right && actor->velocity().x > 0)) {
+                                    velocity_correction.x = -actor->velocity().x;
+                                }
+
+                                //colliding_horizontal.insert(actor);
                             }
                             else {
                                 // Prevent getting stuck while sliding on walls
                                 if (overlap_amount.x < 2) continue;
 
-                                correction.y = overlap_amount.y;
-                                if (actor->pos().y < tile_global_origin.y + (TILE_SIZE / 2))
-                                    correction.y *= -1;
+                                bool is_above = actor->pos().y < tile_global_origin.y + (TILE_SIZE / 2);
+
+                                position_correction.y = overlap_amount.y;
+                                if (is_above) position_correction.y *= -1;
+
+                                if ((is_above && actor->velocity().y > 0) || (!is_above && actor->velocity().y < 0)) {
+                                    velocity_correction.y = -actor->velocity().y;
+                                    // Friction
+                                    float max_friction = actor->velocity().y * 0.2f;
+                                    float true_friction = min(abs(actor->velocity().x), max_friction);
+                                    velocity_correction.x = -sign(actor->velocity().x) * true_friction;
+                                }
+
+                                actor->set_grounded(is_above);
                             }
 
-                            actor->set_pos(actor->pos() + correction);
-                            //print<info, ActorManager>("Actor/Tile Overlap by {}", overlap_amount);
+                            actor->set_pos(actor->pos() + position_correction);
+                            actor->set_velocity(actor->velocity() + velocity_correction);
+                            //print<info, ActorManager>("Collision : {} {}", position_correction, velocity_correction);
                         }
                     }
                     // Assert that all collision types are handled (in case I add more later on)

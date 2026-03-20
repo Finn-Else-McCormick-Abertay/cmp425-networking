@@ -69,6 +69,9 @@ void InputManager::setup_default_binds() {
 
     bind(Key::Escape, actions::back);
     bind(Controller::Button::XBOX_B, actions::select);
+
+    bind(ScanCode::Space, actions::jump);
+    bind(ScanCode::LControl, actions::run);
     
     bind(ScanCode::A, internal_actions::_left_move);
     bind(ScanCode::D, internal_actions::_right_move);
