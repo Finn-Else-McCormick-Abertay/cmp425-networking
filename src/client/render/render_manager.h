@@ -19,6 +19,8 @@ public:
 
     static opt_ref<Camera> active_camera();
     static opt_ref<Camera> ui_camera();
+    
+    static opt_ref<Camera> get_camera(const str& id);
 
     static fvec2 pixel_to_world(const ivec2&);
     static ivec2 world_to_pixel(const fvec2&);

@@ -46,6 +46,8 @@ void Window::set_title(const str& title) { _title = title; _render_window.setTit
 void Window::process_thread() {
     GameLoop game_loop;
     while (is_open()) {
+        // Tick InputManager (for handling stuff like 'just pressed')
+        InputManager::inst().tick();
         // Poll input
         while (const opt event = _render_window.pollEvent()) {
             // Send events to the input manager
@@ -57,8 +59,6 @@ void Window::process_thread() {
             // Update camera aspects on resize
             else if (event->is<Event::Resized>()) RenderManager::set_target(&_render_window);
         }
-        // Tick InputManager (for handling stuff like 'just pressed')
-        InputManager::inst().tick();
         game_loop.tick();
         
         RenderManager::render();

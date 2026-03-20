@@ -12,5 +12,6 @@ int Camera::priority() const { return _priority; }
 void Camera::set_priority(int priority) { _priority = priority; RenderManager::inst().on_camera_order_changed(); }
 
 const fvec2& Camera::position() const { return _position; }
+void Camera::set_position(const fvec2& pos) { _position = pos; }
 
 sf::View Camera::as_view() const { return sf::View(to_sfvec(_position), sf::fvec2(_size / RenderManager::inst()._aspect, _size)); }

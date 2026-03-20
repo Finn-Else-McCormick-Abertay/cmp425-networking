@@ -1,14 +1,10 @@
 #include "level.h"
 #include <assert.h>
 #include <console.h>
-
 #include <util/vec_convert.h>
-
 #include <data/data_manager.h>
-
 #include <prelude/format.h>
 #include <alias/ranges.h>
-
 #include <glaze/glaze.hpp>
 #include <glaze/json.hpp>
 
@@ -52,6 +48,7 @@ Chunk& Level::get_or_make_chunk_at(const ivec2& chunk_coords) {
 
 #ifdef CLIENT
 #include <util/vec_convert.h>
+#include <world/coord_helpers.h>
 #include <assets/asset_manager.h>
 
 #include <input/actions.h>

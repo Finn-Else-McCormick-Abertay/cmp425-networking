@@ -5,6 +5,7 @@
 #include <render/render_manager.h>
 #include <network/network_manager.h>
 #include <world/world_manager.h>
+#include <world/coord_helpers.h>
 
 void DebugSystem::tick(float dt) {
     //if (actions::debug::modifier.down()) {
@@ -34,9 +35,8 @@ void DebugSystem::draw(sf::RenderTarget& target, draw_layer layer) {
         auto& font = AssetManager::get_font("monogram"_id);
         
         if (_show_tile_debug) {
-            auto world_tile_pos = RenderManager::pixel_to_world(actions::cursor.value()) / TILE_SIZE;
-            auto chunk_pos = ivec2(floorf(world_tile_pos.x / Chunk::SIZE_TILES), floorf(world_tile_pos.y / Chunk::SIZE_TILES));
-            auto local_tile_pos = to_uvec(world_tile_pos - (chunk_pos * (float)Chunk::SIZE_TILES));
+            auto world_pos = RenderManager::pixel_to_world(actions::cursor.value());
+            auto [chunk_pos, local_tile_pos] = coords::world_to_chunk_local_tile(world_pos);
 
             str tile_msg;
             /*if (auto chunk_opt = _world->chunk_at(chunk_pos)) {

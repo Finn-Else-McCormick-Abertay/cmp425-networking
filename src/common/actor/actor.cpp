@@ -27,8 +27,8 @@ const frect2& IActor::global_rect() const {
 #ifdef CLIENT
 dyn_arr<draw_layer> IActor::draw_layers() const { return { layers::actor }; }
 void IActor::draw(sf::RenderTarget& target, draw_layer layer) {
-    auto rect = sf::RectangleShape(to_sfvec(local_rect().size));
-    rect.setPosition(to_sfvec(pos()));
+    auto rect = sf::RectangleShape(to_sfvec(global_rect().size));
+    rect.setPosition(to_sfvec(global_rect().origin));
     rect.setFillColor(sf::Color::Yellow);
     target.draw(rect);
 }

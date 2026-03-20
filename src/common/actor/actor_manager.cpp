@@ -1,7 +1,14 @@
 #include "actor_manager.h"
 
 #include <network/network_manager.h>
+#include <world/world_manager.h>
+#include <world/coord_helpers.h>
+#include <data/data_manager.h>
 #include <game_loop.h>
+#include <console.h>
+#ifdef CLIENT
+#include <render/render_manager.h>
+#endif
 
 DEFINE_SINGLETON(ActorManager);
 
@@ -20,11 +27,83 @@ void ActorManager::init() {
 }
 
 void ActorManager::fixed_tick(uint64 elapsed_ticks) {
+    auto level_opt = WorldManager::level("world"_id);
+
     auto delta = GameLoop::FIXED_TIMESTEP / 1.0s;
     for (auto actor : inst()._known_actors) {
         actor->set_velocity(actor->velocity() + actor->acceleration() * delta);
         actor->set_pos(actor->pos() + actor->velocity() * delta);
+
+        if (level_opt) {
+            auto& level = level_opt.value().get();
+
+            auto actor_chunk_pos = coords::world_to_chunk(actor->pos());
+            
+            for (int i = -1; i <= 1; ++i) for (int j = -1; j <= 1; ++j) {
+                auto chunk_pos = actor_chunk_pos + ivec2(i, j);
+                auto chunk_opt = level.chunk_at(chunk_pos);
+                if (!chunk_opt) continue;
+                auto& chunk = chunk_opt.value().get();
+
+                if (!chunk.has(tile_layer::Foreground)) continue;
+                auto& foreground = chunk.at(tile_layer::Foreground);
+                for (uint x = 0; x < Chunk::SIZE_TILES; ++x) for (uint y = 0; y < Chunk::SIZE_TILES; ++y) {
+                    uvec2 local_tile_pos = uvec2(x,y);
+                    auto tile_opt = DataManager::get_tile(foreground.tile_at(local_tile_pos));
+                    if (!tile_opt) continue;
+                    auto& tile_handle = tile_opt.value().get();
+
+                    auto collision_type = tile_handle.collision_type();
+                    // If tile has no collision, skip
+                    if (collision_type == data::TileHandle::CollisionType::None) continue;
+
+                    auto tile_global_origin = coords::chunk_to_world(chunk_pos, local_tile_pos);
+
+                    // If tile is a solid block
+                    if (collision_type == data::TileHandle::CollisionType::Block) {
+                        frect2 tile_global_rect = frect2(tile_global_origin, fvec2(TILE_SIZE, TILE_SIZE));
+
+                        if (overlap(actor->global_rect(), tile_global_rect)) {
+                            fvec2 overlap_amount = overlap_by(actor->global_rect(), tile_global_rect);
+                            fvec2 correction = fvec2();
+                            if (overlap_amount.x < overlap_amount.y) {
+                                correction.x = overlap_amount.x * -1;
+                                if (actor->pos().x > tile_global_origin.x + (TILE_SIZE / 2))
+                                    correction.x *= -1;
+                            }
+                            else {
+                                // Prevent getting stuck while sliding on walls
+                                if (overlap_amount.x < 2) continue;
+
+                                correction.y = overlap_amount.y;
+                                if (actor->pos().y < tile_global_origin.y + (TILE_SIZE / 2))
+                                    correction.y *= -1;
+                            }
+
+                            actor->set_pos(actor->pos() + correction);
+                            //print<info, ActorManager>("Actor/Tile Overlap by {}", overlap_amount);
+                        }
+                    }
+                    // Assert that all collision types are handled (in case I add more later on)
+                    else print<error, ActorManager>("Unhandled collision type {}.", std::to_underlying(collision_type));
+                }
+            }
+        }
     }
+
+    #ifdef CLIENT
+    // Handle player camera
+    for (auto& [ident, player_actor] : _players) {
+        if (player_actor.is_authority()) {
+            auto cam_opt = RenderManager::get_camera("player");
+            if (cam_opt) {
+                auto& cam = cam_opt.value().get();
+                cam.set_position(player_actor.pos());
+            }
+            break;
+        }
+    }
+    #endif
 }
 
 // Something's wrong here. I don't think try emplace works the way I think it does. Hacking around it elsewhere

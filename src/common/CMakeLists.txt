@@ -12,6 +12,7 @@ set(COMMON_SOURCES
     world/world.cpp
     world/level.cpp
     world/chunk.cpp
+    world/coord_helpers.cpp
 
     actor/actor_manager.cpp
     actor/actor.cpp

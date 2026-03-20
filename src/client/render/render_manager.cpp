@@ -89,6 +89,13 @@ opt_ref<Camera> RenderManager::ui_camera() {
     return nullopt;
 }
 
+opt_ref<Camera> RenderManager::get_camera(const str& id) {
+    for (auto cam_ptr : inst()._cameras) {
+        if (cam_ptr->identifier() == id) return ref(*cam_ptr);
+    }
+    return nullopt;
+}
+
 fvec2 RenderManager::pixel_to_world(const ivec2& pixel) { return to_vec(inst()._target->mapPixelToCoords(to_sfvec(pixel), inst()._active_camera ? inst()._active_camera->as_view() : inst()._target->getDefaultView())); }
 ivec2 RenderManager::world_to_pixel(const fvec2& point) { return to_vec(inst()._target->mapCoordsToPixel(to_sfvec(point), inst()._active_camera ? inst()._active_camera->as_view() : inst()._target->getDefaultView())); }
 

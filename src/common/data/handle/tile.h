@@ -13,14 +13,17 @@ namespace data {
         TileHandle(const id& id, const definition::Tile&);
 
         enum class ModelType { None, Block, Custom };
+        enum class CollisionType { None, Block };
         
         const id& id() const;
 
         ModelType model_type() const;
+        CollisionType collision_type() const;
     
     private:
         ::id _id;
         ModelType _model_type;
+        CollisionType _collision_type;
         opt<fs::path> _texture_path, _model_path;
 
         friend class ::AssetManager;

@@ -3,6 +3,9 @@
 #include <prelude.h>
 #include <prelude/vec.h>
 #include <alias/concepts.h>
+#include <vmath.hpp/vmath_fun.hpp>
+#include <fmt/base.h>
+#include <fmt/format.h>
 
 template<typename T, size_t Size>
 class rect {
@@ -52,6 +55,15 @@ public:
     }
 };
 
+// -- Format --
+
+template <typename T, size_t Size> struct fmt::formatter<rect<T, Size>>: formatter<string_view> {
+    auto format(const rect<T, Size>& rect, format_context& ctx) const -> format_context::iterator {
+        str result = fmt::format("rect({} {})", rect.origin, rect.size);
+        return formatter<string_view>::format(result, ctx);
+    }
+};
+
 // -- Aliases --
 
 template<typename T> using rect2 = rect<T, 2>;
@@ -95,11 +107,11 @@ namespace maths_impl {
     // https://blogs.sas.com/content/sgf/2022/01/13/calculating-the-overlap-of-date-time-intervals/
 
     template<typename T, typename U>
-    bool overlap(T start1, T end1, U start2, U end2) { return end1 >= start2 && end2 >= start1; }
+    bool overlap(T start1, T end1, U start2, U end2) { return end1 > start2 && end2 > start1; }
 
     template<typename T, convertible_to<T> U>
     T overlap_by(T start1, T end1, U start2, U end2) {
-        return max(0, min(end1, end2) - max(start1, start2) + 1);
+        return vmath_hpp::max<T>(T{0}, vmath_hpp::min<T>(end1, end2) - vmath_hpp::max<T>(start1, start2)/* + T{1}*/);
     }
 }
 

@@ -27,11 +27,12 @@ void PlayerActor::draw(sf::RenderTarget& target, draw_layer layer) {
     auto& font = AssetManager::get_font("monogram"_id);
 
     sf::Text player_name_label(font, _player_ident, 16);
-    auto size = player_name_label.getGlobalBounds().size;
-    player_name_label.setOrigin(sf::fvec2(size.x / 2, 0));
+    auto label_size = player_name_label.getGlobalBounds().size;
+    player_name_label.setOrigin(sf::fvec2(label_size.x / 2, label_size.y));
 
-    auto offset = fvec2(local_rect().size.x, 0);
-    player_name_label.setPosition(to_sfvec(pos() + local_rect().origin + offset));
+    fvec2 label_pos = global_rect().origin +
+        fvec2(local_rect().size.x / 2, -local_rect().size.y / 2);
+    player_name_label.setPosition(to_sfvec(label_pos));
 
     target.draw(player_name_label);
 }

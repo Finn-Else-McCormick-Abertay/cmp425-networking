@@ -19,6 +19,8 @@
 
 #include <util/format/SFML/network.h>
 
+#include <maths/rect.h>
+
 int main(int argc, char** argv) {
     print<info>("Client init.");
 

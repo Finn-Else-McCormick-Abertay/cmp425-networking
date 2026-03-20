@@ -10,6 +10,7 @@ public:
     virtual ~Camera();
 
     const fvec2& position() const;
+    void set_position(const fvec2&);
     sf::View as_view() const;
 
     const str& identifier() const;
