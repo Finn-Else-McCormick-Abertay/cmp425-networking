@@ -41,7 +41,6 @@ void player::InteractionSystem::tick(float dt) {
 
         fvec2 move_vec = actions::move.value();
         move_vec.y = 0;
-        //move_vec.y *= -1;
         move_vec *= move_speed;
 
         float gravity = 32.f * (float)TILE_SIZE; // Assuming 1 tile = 1 foot

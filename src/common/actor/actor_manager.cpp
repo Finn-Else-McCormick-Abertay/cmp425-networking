@@ -38,6 +38,8 @@ void ActorManager::fixed_tick(uint64 elapsed_ticks) {
         actor->set_velocity(actor->velocity() + actor->acceleration() * delta);
         actor->set_pos(actor->pos() + actor->velocity() * delta);
 
+        actor->set_grounded(false);
+
         if (level_opt) {
             auto& level = level_opt.value().get();
 
@@ -83,8 +85,6 @@ void ActorManager::fixed_tick(uint64 elapsed_ticks) {
                                 if ((is_to_right && actor->velocity().x < 0) || (!is_to_right && actor->velocity().x > 0)) {
                                     velocity_correction.x = -actor->velocity().x;
                                 }
-
-                                //colliding_horizontal.insert(actor);
                             }
                             else {
                                 // Prevent getting stuck while sliding on walls
@@ -103,7 +103,7 @@ void ActorManager::fixed_tick(uint64 elapsed_ticks) {
                                     velocity_correction.x = -sign(actor->velocity().x) * true_friction;
                                 }
 
-                                actor->set_grounded(is_above);
+                                if (is_above) actor->set_grounded(true);
                             }
 
                             actor->set_pos(actor->pos() + position_correction);

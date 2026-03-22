@@ -50,7 +50,7 @@ private:
 
     static void append_packet_into(sf::Packet& sum, LogicalPacket&&);
     
-    void handle_incoming(const SocketAddress&, TcpSocket&);
+    void handle_incoming(const SocketAddress&, TcpSocket&, int max_iterations);
     void handle_incoming_packet(const SocketAddress&, LogicalPacket&&);
     void handle_outgoing(INetworked&);
 
@@ -64,6 +64,7 @@ private:
     str _username;
     opt<str> _user_uid; bool _awaiting_user_uid;
 
+    sf::SocketSelector _selector;
     bstmap<SocketAddress, TcpSocket> _sockets; bstmap<SocketAddress, str> _socket_uids;
     opt<TcpListener> _client_listener; opt<SocketAddress> _server_address;
 

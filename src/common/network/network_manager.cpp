@@ -71,6 +71,7 @@ void NetworkManager::connect_listener(Port port) {
     disconnect_listener();
     _client_listener = make_opt<TcpListener>();
     _client_listener->setBlocking(false);
+    inst()._selector.add(*_client_listener);
     if (_client_listener->listen(port) != Socket::Status::Done)
         return print<error, NetworkManager>("Failed to begin listening on port {}.", port);
     print<success, NetworkManager>("Listening on port {}.", port);
@@ -78,6 +79,7 @@ void NetworkManager::connect_listener(Port port) {
 void NetworkManager::disconnect_listener() {
     if (_client_listener) {
         print<success, NetworkManager>("Stopped listening on port {}.", _client_listener->getLocalPort());
+        inst()._selector.remove(*_client_listener);
         _client_listener->close();
         _client_listener = nullopt;
     }
@@ -95,12 +97,14 @@ void NetworkManager::register_socket(sf::TcpSocket&& socket) {
     SocketAddress address { *ip_address, port };
     socket.setBlocking(false);
     inst()._sockets[address] = move(socket);
+    inst()._selector.add(inst()._sockets.at(address));
     print<network_info>("Connected to {}.", address);
 }
 
 void NetworkManager::disconnect(const SocketAddress& address) {
     if (!_sockets.contains(address)) return print<error, NetworkManager>("Could not disconnect from non-existent socket {}.", address);
     auto address_str = address.to_str();
+    inst()._selector.remove(inst()._sockets.at(address));
     _sockets[address].disconnect(); inst()._sockets.erase(address);
     print<success, NetworkManager>("Disconnected from {}.", address_str); // The SocketAddress object is invalidated upon closing
 }
@@ -124,8 +128,6 @@ void NetworkManager::seek_server_connection() {
         logical_packet.type = LogicalPacket::MessageType::Lifecycle;
         send(logical_packet, *_server_address);
         _awaiting_user_uid = true;
-        //auto wrapped = wrap(, , );
-        //_awaiting_user_uid = send_packet(wrapped, _sockets.at(*_server_address));
     }
 }
 
@@ -256,8 +258,10 @@ void NetworkManager::handle_incoming_packet(const SocketAddress& address, Logica
     else print<warning, NetworkManager>("Unhandled message type {}.", std::to_underlying(logical_packet.type));
 }
 
-void NetworkManager::handle_incoming(const SocketAddress& address, TcpSocket& socket) {
+void NetworkManager::handle_incoming(const SocketAddress& address, TcpSocket& socket, int max_iterations) {
     //print<debug, NetworkManager>("HANDLE INCOMING from {}", address);
+    if (max_iterations <= 0) return;
+
     sf::Packet packet; auto status = socket.receive(packet);
     if (status == Socket::Status::Done) {
         uint16 packet_count; packet >> packet_count;
@@ -281,11 +285,13 @@ void NetworkManager::handle_incoming(const SocketAddress& address, TcpSocket& so
     else if (status == Socket::Status::Disconnected) {
         print<network_info>("Lost connection with {}.", address);
         clear_uid(address);
-        socket.disconnect();
-        inst()._sockets.erase(address);
+        disconnect(address);
     }
     else if (status != Socket::Status::NotReady)
         print<error, NetworkManager>("Failed to recieve packet from {} : {}", address, status);
+    
+    if (status == Socket::Status::Done && max_iterations > 1 && _selector.isReady(socket))
+        handle_incoming(address, socket, max_iterations - 1);
 }
 
 void NetworkManager::handle_outgoing(INetworked& networked) {
@@ -334,7 +340,7 @@ void NetworkManager::network_tick(uint64 elapsed_ticks) {
     // -- Handle incoming messages --
     // (These more verbose loops are used when calling methods that can remove items from the container we're looping over)
     for (auto it = inst()._sockets.begin(), it_next = it; it != inst()._sockets.end(); it = it_next) {
-        ++it_next; inst().handle_incoming(it->first, it->second);
+        ++it_next; inst().handle_incoming(it->first, it->second, 1);
     }
 
     // -- Handle outgoing messages --
