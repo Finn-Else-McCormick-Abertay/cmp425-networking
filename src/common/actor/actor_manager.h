@@ -23,7 +23,7 @@ public:
 
     static void update_player_authority_states();
     
-    virtual void fixed_tick(uint64 elapsed_ticks) override;
+    virtual void fixed_tick() override;
 
 private:
     set<IActor*> _known_actors;

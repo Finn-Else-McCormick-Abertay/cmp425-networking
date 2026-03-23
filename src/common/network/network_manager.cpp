@@ -6,6 +6,7 @@
 #include <alias/ranges.h>
 
 #include <actor/actor_manager.h>
+#include <system/system_manager.h>
 
 DEFINE_SINGLETON(NetworkManager);
 
@@ -123,7 +124,7 @@ void NetworkManager::seek_server_connection() {
 
     if (_sockets.contains(*_server_address) && !_user_uid && !_awaiting_user_uid) {
         sf::Packet packet; packet << _username;
-        auto logical_packet = LogicalPacket("uid", _current_tick, move(packet));
+        auto logical_packet = LogicalPacket("uid", SystemManager::get_fixed_tick(), move(packet));
         logical_packet.owner = network_id("lifecycle"_id, "request");
         logical_packet.type = LogicalPacket::MessageType::Lifecycle;
         send(logical_packet, *_server_address);
@@ -183,7 +184,7 @@ result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& add
     
     if (packet.id.type() == "uid") {
         if (is_request) {
-            auto response_packet = LogicalPacket("uid", _current_tick);
+            auto response_packet = LogicalPacket("uid", SystemManager::get_fixed_tick());
             response_packet.owner = network_id("lifecycle"_id, "answer");
             response_packet.type = LogicalPacket::MessageType::Lifecycle;
 
@@ -222,7 +223,8 @@ result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& add
         }
     }
     else if (packet.id.type() == "sync") {
-        _current_tick = packet.time;
+        uint64 sync_fixed_tick = packet.time;
+        SystemManager::jump_fixed_tick(sync_fixed_tick);
         return empty_success;
     }
     else return err(fmt::format("Unknown packet type '{}'.", packet.id.type()));
@@ -290,15 +292,17 @@ void NetworkManager::handle_incoming(const SocketAddress& address, TcpSocket& so
     else if (status != Socket::Status::NotReady)
         print<error, NetworkManager>("Failed to recieve packet from {} : {}", address, status);
     
-    if (status == Socket::Status::Done && max_iterations > 1 && _selector.isReady(socket))
+    if (status == Socket::Status::Done && max_iterations > 1 && _selector.isReady(socket)) {
+        print<debug, NetworkManager>("MULTI_RECIEVE {} {}", address, max_iterations);
         handle_incoming(address, socket, max_iterations - 1);
+    }
 }
 
 void NetworkManager::handle_outgoing(INetworked& networked) {
     auto net_id = networked.network_id();
     for (auto& message : networked.outstanding()) {
         //print<network_info>("OUTGOING {} {}", net_id, message.id);
-        message.time = _current_tick;
+        message.time = SystemManager::get_fixed_tick();
         message.owner = net_id;
         auto pack_id = message.id;
 
@@ -308,22 +312,18 @@ void NetworkManager::handle_outgoing(INetworked& networked) {
 
 void NetworkManager::request(const network_id& owner, const packet_id& packet_id, const opt<SocketAddress>& target) {
     print<debug, NetworkManager>("REQUEST {} {} {}", owner, packet_id, target);
-    inst()._outgoing_requests.emplace_back(owner, packet_id, inst()._current_tick, target);
+    inst()._outgoing_requests.emplace_back(owner, packet_id, SystemManager::get_fixed_tick(), target);
 }
 
 void NetworkManager::broadcast(const network_id& owner, const packet_id& packet_id, const opt<SocketAddress>& target) {
     print<debug, NetworkManager>("BROADCAST {} {} {}", owner, packet_id, target);
-    inst()._outgoing_broadcasts.emplace_back(owner, packet_id, inst()._current_tick, target);
+    inst()._outgoing_broadcasts.emplace_back(owner, packet_id, SystemManager::get_fixed_tick(), target);
 }
 
-void NetworkManager::network_tick(uint64 elapsed_ticks) {
-    //uint64 tick_delta = elapsed_ticks - inst()._current_tick;
-    //inst()._current_tick = elapsed_ticks;
-    ++inst()._current_tick;
-
+void NetworkManager::perform_network_tick() {
     #ifdef SERVER
-    if (inst()._current_tick % 20 == 0) {
-        auto sync_packet = LogicalPacket("sync", inst()._current_tick);
+    if (SystemManager::get_fixed_tick() % 20 == 0) {
+        auto sync_packet = LogicalPacket("sync", SystemManager::get_fixed_tick());
         sync_packet.owner = network_id("lifecycle"_id, "answer");
         sync_packet.type = LogicalPacket::MessageType::Lifecycle;
         inst().send(move(sync_packet), nullopt);
@@ -443,6 +443,6 @@ str NetworkManager::debug_message() {
         fmt::format("Username: {} | UID: {}", inst()._username, inst().user_uid().value_or("null")),
         fmt::format("Server: {}", inst()._server_address),
         fmt::format("Networked Object Ids: {}", fmt::join(views::keys(inst()._networked_by_id), ", ")),
-        fmt::format("Current Tick: {}", inst()._current_tick)
+        fmt::format("Fixed Tick: {}", SystemManager::get_fixed_tick()),
     }, "\n"));
 }

@@ -18,7 +18,7 @@ public:
 
     static void init();
     
-    static void network_tick(uint64 elapsed_ticks);
+    static void perform_network_tick();
     
     static void request(const network_id&, const packet_id&, const opt<SocketAddress>& = nullopt);
     static void broadcast(const network_id&, const packet_id&, const opt<SocketAddress>& = nullopt);
@@ -33,7 +33,9 @@ public:
     static void set_server_address(const SocketAddress&);
     
     static str debug_message();
-
+    
+    // Set a minimum time between network ticks to avoid the sockets getting overwhelmed
+    static constexpr chrono::microseconds NETWORK_TICK_MIN_TIMESTEP = 4ms;
 private:
     static constexpr Port SERVER_PORT = 5300;
     void connect_listener(Port port = SERVER_PORT);
@@ -56,7 +58,6 @@ private:
 
     result<success_t, str> handle_lifecycle(const SocketAddress&, const network_id&, LogicalPacket&&);
     
-    uint64 _current_tick;
     set<INetworked*> _networked; hashmap<network_id, INetworked*> _networked_by_id;
 
     dyn_arr<tuple<network_id, packet_id, uint64, opt<SocketAddress>>> _outgoing_requests, _outgoing_broadcasts;

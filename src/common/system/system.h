@@ -16,5 +16,5 @@ public:
     IFixedTickingSystem();
     virtual ~IFixedTickingSystem();
 
-    virtual void fixed_tick(uint64 elapsed_ticks) = 0;
+    virtual void fixed_tick() = 0;
 };

@@ -10,6 +10,7 @@
 #ifdef CLIENT
 #include <render/render_manager.h>
 #endif
+#include <system/system_manager.h>
 
 using namespace vmath_hpp;
 
@@ -29,10 +30,10 @@ void ActorManager::init() {
     inst();
 }
 
-void ActorManager::fixed_tick(uint64 elapsed_ticks) {
+void ActorManager::fixed_tick() {
     auto level_opt = WorldManager::level("world"_id);
 
-    auto delta = GameLoop::FIXED_TIMESTEP / 1.0s;
+    auto delta = SystemManager::FIXED_TIMESTEP / 1.0s;
 
     for (auto actor : inst()._known_actors) {
         actor->set_velocity(actor->velocity() + actor->acceleration() * delta);

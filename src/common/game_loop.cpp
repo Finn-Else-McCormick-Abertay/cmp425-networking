@@ -14,24 +14,21 @@ GameLoop::GameLoop() {
 void GameLoop::tick() {
     // Tick systems
     sf::Time delta_time = _clock.restart();
-    SystemManager::tick(delta_time.asSeconds());
+    SystemManager::perform_tick(delta_time.asSeconds());
 
     // Tick physics
     auto fixed_rate_delta_time = delta_time.toDuration() + _fixed_tick_remainder;
-    uint fixed_rate_steps = fixed_rate_delta_time / FIXED_TIMESTEP;
-    _fixed_tick_remainder = fixed_rate_delta_time % FIXED_TIMESTEP;
+    uint fixed_rate_steps = fixed_rate_delta_time / SystemManager::FIXED_TIMESTEP;
+    _fixed_tick_remainder = fixed_rate_delta_time % SystemManager::FIXED_TIMESTEP;
 
     for (uint i = 0; i < fixed_rate_steps; ++i) {
-        SystemManager::fixed_tick(_elapsed_fixed_ticks);
-        _elapsed_fixed_ticks++;
+        SystemManager::perform_fixed_tick();
     }
 
     // Tick network
     _network_tick_delta += delta_time.toDuration();
-    if (_network_tick_delta >= NETWORK_MIN_TIMESTEP) {
-        NetworkManager::network_tick(_elapsed_network_ticks);
-        _elapsed_network_ticks++;
-        //_network_tick_delta -= NETWORK_MIN_TIMESTEP;
+    if (_network_tick_delta >= NetworkManager::NETWORK_TICK_MIN_TIMESTEP) {
+        NetworkManager::perform_network_tick();
         _network_tick_delta = 0ms;
     }
 }
