@@ -20,8 +20,22 @@ public:
     
     static void perform_network_tick();
     
+    /** Request packet from given network id at given address.
+     * If no address is provided, request will be sent to all active sockets. */
     static void request(const network_id&, const packet_id&, const opt<SocketAddress>& = nullopt);
-    static void broadcast(const network_id&, const packet_id&, const opt<SocketAddress>& = nullopt);
+
+    /** Get packet from given network id with INetworked::get_requested_message(const packet_id&) const and send it to given address.
+     *  If packet could not be successfully obtained, a packet with the contents 'unhandled' will be sent.
+     *  If no address is provided, packet will be sent to all active sockets.
+     * @retval Was packet successfully obtained from network id?
+     */
+    static bool broadcast(const network_id&, const packet_id&, const opt<SocketAddress>& = nullopt);
+
+    /** Send packet to given address. If no address is provided, packet will be sent to all active sockets. */
+    static void broadcast(const LogicalPacket&, const opt<SocketAddress>& = nullopt);
+
+    /** Send packet to given address. If no address is provided, packet will be sent to all active sockets. */
+    static void broadcast(LogicalPacket&&, const opt<SocketAddress>& = nullopt);
 
     static opt<str> user_uid();
     static const str& username();
@@ -49,23 +63,19 @@ private:
     
     void seek_server_connection();
     void seek_client_connection();
-
-    static void append_packet_into(sf::Packet& sum, LogicalPacket&&);
     
-    void handle_incoming(const SocketAddress&, TcpSocket&, int max_iterations);
+    void handle_incoming(const SocketAddress&, TcpSocket&);
     void handle_incoming_packet(const SocketAddress&, LogicalPacket&&);
     void handle_outgoing(INetworked&);
 
-    result<success_t, str> handle_lifecycle(const SocketAddress&, const network_id&, LogicalPacket&&);
+    result<success_t, str> handle_lifecycle(const SocketAddress&, LogicalPacket&&);
     
     set<INetworked*> _networked; hashmap<network_id, INetworked*> _networked_by_id;
-
-    dyn_arr<tuple<network_id, packet_id, uint64, opt<SocketAddress>>> _outgoing_requests, _outgoing_broadcasts;
     
     str _username;
     opt<str> _user_uid; bool _awaiting_user_uid;
 
-    sf::SocketSelector _selector;
+    //sf::SocketSelector _selector;
     bstmap<SocketAddress, TcpSocket> _sockets; bstmap<SocketAddress, str> _socket_uids;
     opt<TcpListener> _client_listener; opt<SocketAddress> _server_address;
 

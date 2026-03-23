@@ -137,7 +137,7 @@ void ActorManager::fixed_tick() {
 // Something's wrong here. I don't think try emplace works the way I think it does. Hacking around it elsewhere
 PlayerActor& ActorManager::register_player(const str& ident, bool broadcast, bool fail_quiet) {
     auto [it, is_new] = inst()._players.try_emplace(ident, PlayerActor(ident));
-    if (is_new && broadcast) NetworkManager::broadcast(inst().network_id(), packet_id("player", { "connected", ident }));
+    if (is_new && broadcast) NetworkManager::broadcast(LogicalPacket(inst().network_id(), packet_id("player", { "connected", ident })));
 
     if (is_new) print<info, ActorManager>("Registered player '{}'.", ident);
     else if (!fail_quiet) print<warning, ActorManager>("register_player called for previously registered player '{}'.", ident);
@@ -146,7 +146,8 @@ PlayerActor& ActorManager::register_player(const str& ident, bool broadcast, boo
 
 void ActorManager::unregister_player(const str& ident, bool broadcast, bool fail_quiet) {
     if (!inst()._players.erase(ident) && !fail_quiet) return print<warning, ActorManager>("unregister_player called for nonexistent player '{}'.", ident);
-    if (broadcast) NetworkManager::broadcast(inst().network_id(), packet_id("player", { "disconnected", ident }));
+    
+    if (broadcast) NetworkManager::broadcast(LogicalPacket(inst().network_id(), packet_id("player", { "disconnected", ident })));
     print<info, ActorManager>("Unregistered player '{}'.", ident);
 }
 
@@ -166,8 +167,8 @@ result<LogicalPacket, str> ActorManager::get_requested_message(const packet_id& 
         if (!event_arg) return err("Missing event arg."); else if (!ident_arg) return err("Missing player ident arg.");
         auto& event = *event_arg; auto& ident = *ident_arg;
         
-        if (event == "connected" || event == "existing") return LogicalPacket(id);
-        else if (event == "disconnected") return LogicalPacket(id);
+        if (event == "connected" || event == "existing") return LogicalPacket(network_id(), id);
+        else if (event == "disconnected") return LogicalPacket(network_id(), id);
         else return err("Invalid event arg. Must be one of 'connected', 'disconnected' or 'existing'.");
     }
     return err("Unknown packet type.");

@@ -108,12 +108,12 @@ result<LogicalPacket, str> WorldManager::get_requested_message(const packet_id& 
             auto result = glz::write_json(*_world);
             if (!result) return err("Serialisation failed.");
 
-            auto packet = LogicalPacket(id);
-            packet.packet << *result;
+            auto packet = LogicalPacket(network_id(), id);
+            packet.contents << *result;
             return move(packet);
         }
         else if (event == "unloaded") {
-            return LogicalPacket(id);
+            return LogicalPacket(network_id(), id);
         }
         else return err(fmt::format("Invalid event arg '{}'.", event));
     }
@@ -129,7 +129,7 @@ result<success_t, str> WorldManager::read_message(LogicalPacket&& packet) {
         if (event == "loaded" || event == "joined") {
             if (_world && _world->is_authority()) return err("Authoritative world is already loaded.");
 
-            str buffer; packet.packet >> buffer;
+            str buffer; packet.contents >> buffer;
             auto result = glz::read_json<World>(buffer);
             if (!result) return err("Deserialisation failed.");
             

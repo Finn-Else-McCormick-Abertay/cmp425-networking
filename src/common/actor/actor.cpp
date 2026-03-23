@@ -42,8 +42,8 @@ INetworkedActor::INetworkedActor(INetworkedActor&& rhs) : IActor(rhs.network_id(
 
 /*
 dyn_arr<LogicalPacket> INetworkedActor::get_outstanding_messages() {
-    LogicalPacket update(packet_id("motion"));
-    update.packet << pos().x << pos().y << velocity().x << velocity().y << acceleration().x << acceleration().y;
+    LogicalPacket update(network_id(), "motion"_packid);
+    update.contents << pos().x << pos().y << velocity().x << velocity().y << acceleration().x << acceleration().y;
     return { move(update) };
 }
 
@@ -51,7 +51,7 @@ result<success_t, str> INetworkedActor::read_message(LogicalPacket&& packet) {
     if (packet.id.type() == "motion") {
         fvec2 pos, velocity, acceleration;
 
-        packet.packet >> pos.x >> pos.y >> velocity.x >> velocity.y >> acceleration.x >> acceleration.y;
+        packet.contents >> pos.x >> pos.y >> velocity.x >> velocity.y >> acceleration.x >> acceleration.y;
 
         set_pos(pos);
         set_velocity(velocity);

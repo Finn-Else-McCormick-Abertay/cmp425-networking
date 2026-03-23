@@ -22,6 +22,9 @@ private:
     friend class glz::meta<network_id>;
 };
 
+constexpr network_id const operator ""_netid(const char* literal, size_t) { return network_id::from_str(literal); }
+static const network_id network_nullid = ""_netid;
+
 inline auto format_as(const network_id& id) { return id.to_str(); }
 template<> struct std::hash<network_id> {
     size_t operator()(const network_id& network_id) const noexcept {

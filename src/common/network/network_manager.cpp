@@ -72,7 +72,7 @@ void NetworkManager::connect_listener(Port port) {
     disconnect_listener();
     _client_listener = make_opt<TcpListener>();
     _client_listener->setBlocking(false);
-    inst()._selector.add(*_client_listener);
+    //inst()._selector.add(*_client_listener);
     if (_client_listener->listen(port) != Socket::Status::Done)
         return print<error, NetworkManager>("Failed to begin listening on port {}.", port);
     print<success, NetworkManager>("Listening on port {}.", port);
@@ -80,7 +80,7 @@ void NetworkManager::connect_listener(Port port) {
 void NetworkManager::disconnect_listener() {
     if (_client_listener) {
         print<success, NetworkManager>("Stopped listening on port {}.", _client_listener->getLocalPort());
-        inst()._selector.remove(*_client_listener);
+        //inst()._selector.remove(*_client_listener);
         _client_listener->close();
         _client_listener = nullopt;
     }
@@ -98,14 +98,14 @@ void NetworkManager::register_socket(sf::TcpSocket&& socket) {
     SocketAddress address { *ip_address, port };
     socket.setBlocking(false);
     inst()._sockets[address] = move(socket);
-    inst()._selector.add(inst()._sockets.at(address));
+    //inst()._selector.add(inst()._sockets.at(address));
     print<network_info>("Connected to {}.", address);
 }
 
 void NetworkManager::disconnect(const SocketAddress& address) {
     if (!_sockets.contains(address)) return print<error, NetworkManager>("Could not disconnect from non-existent socket {}.", address);
     auto address_str = address.to_str();
-    inst()._selector.remove(inst()._sockets.at(address));
+    //inst()._selector.remove(inst()._sockets.at(address));
     _sockets[address].disconnect(); inst()._sockets.erase(address);
     print<success, NetworkManager>("Disconnected from {}.", address_str); // The SocketAddress object is invalidated upon closing
 }
@@ -124,10 +124,7 @@ void NetworkManager::seek_server_connection() {
 
     if (_sockets.contains(*_server_address) && !_user_uid && !_awaiting_user_uid) {
         sf::Packet packet; packet << _username;
-        auto logical_packet = LogicalPacket("uid", SystemManager::get_fixed_tick(), move(packet));
-        logical_packet.owner = network_id("lifecycle"_id, "request");
-        logical_packet.type = LogicalPacket::MessageType::Lifecycle;
-        send(logical_packet, *_server_address);
+        broadcast(LogicalPacket("lifecycle#request"_netid, "uid"_packid, move(packet), nullopt, LogicalPacket::MessageType::Lifecycle), *_server_address);
         _awaiting_user_uid = true;
     }
 }
@@ -176,26 +173,25 @@ void NetworkManager::clear_uid(const SocketAddress& address) {
     _socket_uids.erase(address);
 }
 
-result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& address, const network_id& owner, LogicalPacket&& packet) {
-    if (owner.type() != "lifecycle"_id && !(owner.inst() == "request" || owner.inst() == "answer"))
-        return err(fmt::format("Invalid network id '{}'.", owner));
+result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& address, LogicalPacket&& packet) {
+    if (packet.owner.type() != "lifecycle"_id && !(packet.owner.inst() == "request" || packet.owner.inst() == "answer"))
+        return err(fmt::format("Invalid network id '{}'.", packet.owner));
     
-    bool is_request = owner.inst() == "request";
+    bool is_request = packet.owner.inst() == "request";
     
     if (packet.id.type() == "uid") {
         if (is_request) {
-            auto response_packet = LogicalPacket("uid", SystemManager::get_fixed_tick());
-            response_packet.owner = network_id("lifecycle"_id, "answer");
+            auto response_packet = LogicalPacket("lifecycle#answer"_netid, "uid"_packid);
             response_packet.type = LogicalPacket::MessageType::Lifecycle;
 
-            str requested_username; packet.packet >> requested_username;
+            str requested_username; packet.contents >> requested_username;
             if (auto result = try_set_uid(address, requested_username)) {
-                response_packet.id = packet_id("uid!success");
-                response_packet.packet << *result;
+                response_packet.id = "uid!success"_packid;
+                response_packet.contents << *result;
             }
             else  {
                 print<error, NetworkManager>("Failed to set uid for {}.", address);
-                response_packet.id = packet_id("uid!failure;taken");
+                response_packet.id = "uid!failure;taken"_packid;
             }
 
             send(response_packet, address);
@@ -215,7 +211,7 @@ result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& add
                 if (auto reason_arg = packet.id.get_arg(1)) return err(fmt::format("{}: {}", *success_arg, *reason_arg));
                 return err(*success_arg);
             }
-            str validated_uid; packet.packet >> validated_uid;
+            str validated_uid; packet.contents >> validated_uid;
             _user_uid = validated_uid;
             ActorManager::update_player_authority_states();
             print<network_info, NetworkManager>("Registered with server as {}.", *_user_uid);
@@ -232,15 +228,6 @@ result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& add
     return err("Unhandled.");
 }
 
-void NetworkManager::append_packet_into(sf::Packet& sum_packet, LogicalPacket&& logical_packet) {
-    sum_packet << logical_packet.owner.to_str();
-    sum_packet << logical_packet.id.as_str();
-    sum_packet << (uint8)logical_packet.type;
-    sum_packet << (uint64)logical_packet.time;
-    sum_packet << (uint64)logical_packet.packet.getDataSize();
-    sum_packet.append(logical_packet.packet.getData(), logical_packet.packet.getDataSize());
-}
-
 void NetworkManager::handle_incoming_packet(const SocketAddress& address, LogicalPacket&& logical_packet) {
     //print<network_info>("RECIEVED {} {} from {}", logical_packet.owner, logical_packet.id, address);
     if (logical_packet.type == LogicalPacket::MessageType::Default) {
@@ -251,36 +238,24 @@ void NetworkManager::handle_incoming_packet(const SocketAddress& address, Logica
     }
     else if (logical_packet.type == LogicalPacket::MessageType::Request) {
         print<debug, NetworkManager>("ANSWER REQUEST {} {}", logical_packet.owner, logical_packet.id);
-        _outgoing_broadcasts.emplace_back(logical_packet.owner, logical_packet.id, logical_packet.time, address);
+        broadcast(logical_packet.owner, logical_packet.id, address);
     }
     else if (logical_packet.type == LogicalPacket::MessageType::Lifecycle) {
-        auto result = handle_lifecycle(address, logical_packet.owner, move(logical_packet));
+        auto result = handle_lifecycle(address, move(logical_packet));
         if (!result) print<error, NetworkManager>("Failed lifecycle request ({},{}) for {}. {}", logical_packet.owner, logical_packet.id, address, result.error());
     }
     else print<warning, NetworkManager>("Unhandled message type {}.", std::to_underlying(logical_packet.type));
 }
 
-void NetworkManager::handle_incoming(const SocketAddress& address, TcpSocket& socket, int max_iterations) {
+void NetworkManager::handle_incoming(const SocketAddress& address, TcpSocket& socket) {
     //print<debug, NetworkManager>("HANDLE INCOMING from {}", address);
-    if (max_iterations <= 0) return;
+    //if (max_iterations <= 0) return;
 
     sf::Packet packet; auto status = socket.receive(packet);
     if (status == Socket::Status::Done) {
         uint16 packet_count; packet >> packet_count;
         for (int i = 0; i < packet_count; ++i) {
-            str owner_str; packet >> owner_str;
-            str id_str; packet >> id_str;
-            uint8 type; packet >> type;
-            uint64 time; packet >> time;
-            uint64 data_size; packet >> data_size;
-            uint8 data[data_size];
-            for (int j = 0; j < data_size; ++j) packet >> data[j];
-
-            LogicalPacket logical_packet = LogicalPacket(id_str, time);
-            logical_packet.owner = network_id::from_str(owner_str);
-            logical_packet.type = (LogicalPacket::MessageType)type;
-            logical_packet.packet.append(data, data_size);
-
+            auto logical_packet = LogicalPacket::unpack(packet);
             handle_incoming_packet(address, move(logical_packet));
         }
     }
@@ -292,10 +267,10 @@ void NetworkManager::handle_incoming(const SocketAddress& address, TcpSocket& so
     else if (status != Socket::Status::NotReady)
         print<error, NetworkManager>("Failed to recieve packet from {} : {}", address, status);
     
-    if (status == Socket::Status::Done && max_iterations > 1 && _selector.isReady(socket)) {
+    /*if (status == Socket::Status::Done && max_iterations > 1 && _selector.isReady(socket)) {
         print<debug, NetworkManager>("MULTI_RECIEVE {} {}", address, max_iterations);
         handle_incoming(address, socket, max_iterations - 1);
-    }
+    }*/
 }
 
 void NetworkManager::handle_outgoing(INetworked& networked) {
@@ -312,22 +287,39 @@ void NetworkManager::handle_outgoing(INetworked& networked) {
 
 void NetworkManager::request(const network_id& owner, const packet_id& packet_id, const opt<SocketAddress>& target) {
     print<debug, NetworkManager>("REQUEST {} {} {}", owner, packet_id, target);
-    inst()._outgoing_requests.emplace_back(owner, packet_id, SystemManager::get_fixed_tick(), target);
+    auto logical_packet = LogicalPacket(owner, packet_id);
+    logical_packet.type = LogicalPacket::MessageType::Request;
+    inst().send(logical_packet, target);
 }
 
-void NetworkManager::broadcast(const network_id& owner, const packet_id& packet_id, const opt<SocketAddress>& target) {
+void NetworkManager::broadcast(const LogicalPacket& packet, const opt<SocketAddress>& target) {
+    print<debug, NetworkManager>("BROADCAST {} {} {}", packet.owner, packet.id, target);
+    inst().send(packet, target);
+}
+
+void NetworkManager::broadcast(LogicalPacket&& packet, const opt<SocketAddress>& target) {
+    print<debug, NetworkManager>("BROADCAST {} {} {}", packet.owner, packet.id, target);
+    inst().send(move(packet), target);
+}
+
+bool NetworkManager::broadcast(const network_id& owner, const packet_id& packet_id, const opt<SocketAddress>& target) {
     print<debug, NetworkManager>("BROADCAST {} {} {}", owner, packet_id, target);
-    inst()._outgoing_broadcasts.emplace_back(owner, packet_id, SystemManager::get_fixed_tick(), target);
+    opt<LogicalPacket> answer_opt = nullopt;
+    if (inst()._networked_by_id.contains(owner)) answer_opt = inst()._networked_by_id.at(owner)->request(packet_id);
+
+    LogicalPacket packet = answer_opt.or_else([&owner, &packet_id](){
+        auto packet = LogicalPacket(owner, packet_id);
+        packet.contents << "unhandled";
+        return make_opt(move(packet));
+    }).value();
+
+    inst().send(packet, target);
+    return answer_opt.has_value();
 }
 
 void NetworkManager::perform_network_tick() {
     #ifdef SERVER
-    if (SystemManager::get_fixed_tick() % 20 == 0) {
-        auto sync_packet = LogicalPacket("sync", SystemManager::get_fixed_tick());
-        sync_packet.owner = network_id("lifecycle"_id, "answer");
-        sync_packet.type = LogicalPacket::MessageType::Lifecycle;
-        inst().send(move(sync_packet), nullopt);
-    }
+    if (SystemManager::get_fixed_tick() % 20 == 0) inst().send(LogicalPacket("lifecycle#answer"_netid, "sync"_packid, nullopt, LogicalPacket::MessageType::Lifecycle), nullopt);
     #endif
 
     // -- Seek connections --
@@ -340,42 +332,10 @@ void NetworkManager::perform_network_tick() {
     // -- Handle incoming messages --
     // (These more verbose loops are used when calling methods that can remove items from the container we're looping over)
     for (auto it = inst()._sockets.begin(), it_next = it; it != inst()._sockets.end(); it = it_next) {
-        ++it_next; inst().handle_incoming(it->first, it->second, 1);
+        ++it_next; inst().handle_incoming(it->first, it->second);
     }
 
-    // -- Handle outgoing messages --
-    
-    // Outgoing requests
-    for (auto it = inst()._outgoing_requests.begin(), it_next = it; it != inst()._outgoing_requests.end(); it = it_next) {
-        ++it_next; auto [netid, packid, time, target] = *it;
-        auto logical_packet = LogicalPacket(packid, time);
-        logical_packet.owner = netid;
-        logical_packet.type = LogicalPacket::MessageType::Request;
-        inst().send(logical_packet, target);
-        it_next = inst()._outgoing_requests.erase(it);
-    }
-
-    // Outgoing broadcasts / request answers
-    for (auto it = inst()._outgoing_broadcasts.begin(), it_next = it; it != inst()._outgoing_broadcasts.end(); it = it_next) {
-        ++it_next; auto [netid, packid, time, address] = *it;
-
-        opt<LogicalPacket> answer = nullopt;
-        if (inst()._networked_by_id.contains(netid)) answer = inst()._networked_by_id.at(netid)->request(packid);
-
-        LogicalPacket pack = answer.or_else([&packid](){
-            auto packet = LogicalPacket(packid);
-            packet.packet << "unhandled";
-            return make_opt(move(packet));
-        }).value();
-        answer->time = time;
-
-        pack.owner = netid;
-
-        inst().send(pack, address);
-        it_next = inst()._outgoing_broadcasts.erase(it);
-    }
-
-    // Ticked messages
+    // -- Handle ticked messages --
     for (auto networked : inst()._networked) inst().handle_outgoing(*networked);
 
     // -- Sum up messages sent this tick --
@@ -387,7 +347,7 @@ void NetworkManager::perform_network_tick() {
     if (inst()._accumulated_packets.contains(all_address)) {
         auto& packet_array = inst()._accumulated_packets.at(all_address);
         shared_message_count = packet_array.size();
-        for (auto& logical_packet : packet_array) append_packet_into(shared_sum_packet, move(logical_packet));
+        for (auto& logical_packet : packet_array) logical_packet.pack_into(shared_sum_packet);
     }
 
     // Send all summed packets
@@ -410,7 +370,7 @@ void NetworkManager::perform_network_tick() {
         
         // Append specific messages
         if (specific_arr != nullptr)
-            for (auto& specific_packet : *specific_arr) append_packet_into(sum_packet, move(specific_packet));
+            for (auto& specific_packet : *specific_arr) specific_packet.pack_into(sum_packet);
         
         Socket::Status status;
         do status = socket.send(sum_packet); while (status == Socket::Status::Partial);

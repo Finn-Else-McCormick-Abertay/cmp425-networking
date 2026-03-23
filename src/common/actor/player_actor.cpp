@@ -62,8 +62,8 @@ dyn_arr<LogicalPacket> PlayerActor::get_outstanding_messages() {
     auto& pos_send = pos(); auto& vel_send = velocity(); //auto& accel_send = acceleration();
 
     //print<debug, PlayerActor>("Sent motion data {} {} {}", pos_send, vel_send, accel_send);
-    LogicalPacket update(packet_id("motion"));
-    update.packet << pos_send.x << pos_send.y << vel_send.x << vel_send.y;// << accel_send.x << accel_send.y;
+    LogicalPacket update(network_id(), "motion"_packid);
+    update.contents << pos_send.x << pos_send.y << vel_send.x << vel_send.y;// << accel_send.x << accel_send.y;
     return { move(update) };
 }
 
@@ -75,7 +75,7 @@ result<success_t, str> PlayerActor::read_message(LogicalPacket&& packet) {
 
         float pos_x, pos_y, vel_x, vel_y;//, acc_x, acc_y;
 
-        packet.packet >> pos_x >> pos_y >> vel_x >> vel_y;// >> acc_x >> acc_y;
+        packet.contents >> pos_x >> pos_y >> vel_x >> vel_y;// >> acc_x >> acc_y;
         
         //print<debug>("Recieved motion data {} {}", pos_x, pos_y);
 

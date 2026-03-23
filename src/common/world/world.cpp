@@ -35,7 +35,7 @@ LogicalPacket World::package_chunks(id level_id, dyn_arr<ivec2>&& chunks) const 
     id_args.append_range(chunks | views::transform([](const ivec2& v){ return fmt::format("{}", fmt::join(v, ",")); }));
 
     auto id = packet_id("chunk", move(id_args));
-    auto packet = LogicalPacket(id);
+    auto packet = LogicalPacket(network_id(), id);
 
     if (auto level_opt = level(level_id)) {
         const Level& level = *level_opt;
@@ -47,12 +47,12 @@ LogicalPacket World::package_chunks(id level_id, dyn_arr<ivec2>&& chunks) const 
                 if (auto result = glz::write_json(chunk)) buffer = *result;
                 else print<error, World>("Failed to serialise chunk at {}[{}].", level_id, fmt::join(chunk.pos(), ", "));
             }
-            packet.packet << buffer;
+            packet.contents << buffer;
         }
     }
     else {
         print<warning, World>("Attempted to package chunks [{}] for non-existent level {}.", fmt::join(chunks, ", "), level_id);
-        for (auto& pos : chunks) packet.packet << "null";
+        for (auto& pos : chunks) packet.contents << "null";
     }
     return packet;
 }
@@ -110,7 +110,7 @@ result<success_t, str> World::read_message(LogicalPacket&& packet) {
 
         Level& level = *level_opt;
         for (auto& pos : chunks) {
-            str buffer; packet.packet >> buffer;
+            str buffer; packet.contents >> buffer;
             if (buffer == "unknown") continue;
 
             auto result = glz::read_json<Chunk>(buffer);
