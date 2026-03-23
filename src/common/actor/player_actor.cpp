@@ -1,6 +1,7 @@
 #include "player_actor.h"
 
 #include <network/network_manager.h>
+#include <system/system_manager.h>
 
 PlayerActor::PlayerActor(const str& ident)
 : _authority(false), _player_ident(ident), INetworkedActor(::network_id("player"_id, ident)) {
@@ -39,10 +40,11 @@ void PlayerActor::draw(sf::RenderTarget& target, draw_layer layer) {
 #endif
 
 dyn_arr<LogicalPacket> PlayerActor::get_outstanding_messages() {
-    //return {};
     #ifdef CLIENT
     if (!_authority) return {};
     #endif
+
+    if (SystemManager::get_fixed_tick() % 5 != 0) return {};
 
     auto pos_diff = abs(length2(_prev_sent_position - pos()));
     auto vel_diff = abs(length2(_prev_sent_velocity - velocity()));

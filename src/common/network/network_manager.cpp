@@ -277,10 +277,7 @@ void NetworkManager::handle_outgoing(INetworked& networked) {
     auto net_id = networked.network_id();
     for (auto& message : networked.outstanding()) {
         //print<network_info>("OUTGOING {} {}", net_id, message.id);
-        message.time = SystemManager::get_fixed_tick();
         message.owner = net_id;
-        auto pack_id = message.id;
-
         send(move(message), nullopt);
     }
 }
