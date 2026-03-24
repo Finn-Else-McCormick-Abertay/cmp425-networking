@@ -16,6 +16,7 @@ set(COMMON_SOURCES
 
     actor/actor_manager.cpp
     actor/actor.cpp
+    actor/networked_actor.cpp
     actor/player_actor.cpp
 
     data/data_manager.cpp

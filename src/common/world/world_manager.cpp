@@ -6,7 +6,7 @@
 
 DEFINE_SINGLETON(WorldManager);
 
-WorldManager::WorldManager() : INetworked(::network_id("singleton"_id, "world_manager")) {}
+WorldManager::WorldManager() : INetworked(network_id("singleton"_id, "world_manager")) {}
 
 opt_ref<World> WorldManager::world() {
     if (inst()._world) return *inst()._world;
@@ -25,7 +25,7 @@ void WorldManager::init() {
     #ifdef CLIENT
     if (!inst()._world && NetworkManager::server_address()) {
         // Request world information from server
-        NetworkManager::request(inst().network_id(), packet_id("world", { "joined" }), *NetworkManager::server_address());
+        NetworkManager::request(inst().netid(), packet_id("world", { "joined" }), *NetworkManager::server_address());
     }
     #elifdef SERVER
     // If a world name was not provided by the cli (runs before the init methods)
@@ -56,7 +56,7 @@ void WorldManager::internal_load(World&& world, bool authority) {
     if (auto default_level = inst()._world->level("world"_id); !default_level) inst()._world->make_level("world"_id);
 
     print<success, WorldManager>("Loaded world '{}' as {}authority.", inst()._world->name(), authority ? "" : "non-");
-    if (authority) NetworkManager::broadcast(inst().network_id(), packet_id("world!loaded"));
+    if (authority) NetworkManager::broadcast(inst().netid(), packet_id("world!loaded"));
 }
 
 void WorldManager::internal_unload() {
@@ -67,7 +67,7 @@ void WorldManager::internal_unload() {
 
     inst()._world = nullopt;
     print<success, WorldManager>("Unloaded world '{}'.", name);
-    if (authority) NetworkManager::broadcast(inst().network_id(), packet_id("world!unloaded"));
+    if (authority) NetworkManager::broadcast(inst().netid(), packet_id("world!unloaded"));
 }
 
 opt<str> WorldManager::validate_name(const str& name) {
@@ -108,12 +108,12 @@ result<LogicalPacket, str> WorldManager::get_requested_message(const packet_id& 
             auto result = glz::write_json(*_world);
             if (!result) return err("Serialisation failed.");
 
-            auto packet = LogicalPacket(network_id(), id);
+            auto packet = LogicalPacket(netid(), id);
             packet.contents << *result;
             return move(packet);
         }
         else if (event == "unloaded") {
-            return LogicalPacket(network_id(), id);
+            return LogicalPacket(netid(), id);
         }
         else return err(fmt::format("Invalid event arg '{}'.", event));
     }

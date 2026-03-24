@@ -15,7 +15,7 @@ NetworkManager::~NetworkManager() {
 }
 
 void NetworkManager::Registry::__register(INetworked& networked) {
-    auto network_id = networked.network_id();
+    auto network_id = networked.netid();
     if (inst()._networked_by_id.contains(network_id))
         print<error, NetworkManager::Registry>("Overwrote network id '{}'.");
     inst()._networked.insert(&networked);
@@ -25,8 +25,8 @@ void NetworkManager::Registry::__register(INetworked& networked) {
 
 void NetworkManager::Registry::__unregister(INetworked& networked) {
     inst()._networked.erase(&networked);
-    inst()._networked_by_id.erase(networked.network_id());
-    //print<debug, NetworkManager::Registry>("Unregistered {}", networked.network_id());
+    inst()._networked_by_id.erase(networked.netid());
+    //print<debug, NetworkManager::Registry>("Unregistered {}", networked.netid());
 }
 
 void NetworkManager::init() {
@@ -274,7 +274,7 @@ void NetworkManager::handle_incoming(const SocketAddress& address, TcpSocket& so
 }
 
 void NetworkManager::handle_outgoing(INetworked& networked) {
-    auto net_id = networked.network_id();
+    auto net_id = networked.netid();
     for (auto& message : networked.outstanding()) {
         //print<network_info>("OUTGOING {} {}", net_id, message.id);
         message.owner = net_id;

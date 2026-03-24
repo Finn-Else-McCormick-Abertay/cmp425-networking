@@ -5,7 +5,6 @@
 #include <maths/rect.h>
 #include <data/namespaced_id.h>
 #include <render/drawable.h>
-#include <network/networked.h>
 
 struct ActorTransform {
     fvec2 position{0}, velocity{0}, acceleration{0};
@@ -24,7 +23,7 @@ public:
     const frect2& local_rect() const;   void set_local_rect(const frect2&);
     const frect2& global_rect() const;
 
-    bool grounded() const;              void set_grounded(bool);
+    bool grounded() const;  void set_grounded(bool);
 protected:
     IActor(const id&); virtual ~IActor();
     
@@ -41,13 +40,4 @@ private:
     bool _grounded = false;
     // Cache global rect as it will need to be called very often during collision checks
     mutable frect2 _global_rect; mutable bool _global_rect_dirty = true;
-};
-
-class INetworkedActor : public IActor, protected INetworked {
-protected:
-    INetworkedActor(const ::network_id&);
-    INetworkedActor(INetworkedActor&&);
-
-    //virtual dyn_arr<LogicalPacket> get_outstanding_messages() override;
-    //virtual result<success_t, str> read_message(LogicalPacket&&) override;
 };

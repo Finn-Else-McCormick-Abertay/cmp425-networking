@@ -4,7 +4,7 @@
 #include <console.h>
 
 INetworked::INetworked(construct_noinit_t _) : _network_id(nullid, ""), _invalidated(true) {}
-INetworked::INetworked(const ::network_id& network_id) : _network_id(network_id) { NetworkManager::Registry::__register(*this); }
+INetworked::INetworked(const network_id& network_id) : _network_id(network_id) { NetworkManager::Registry::__register(*this); }
 INetworked::~INetworked() { if (!_invalidated) NetworkManager::Registry::__unregister(*this); }
 
 INetworked::INetworked(INetworked&& other) : _network_id(other._network_id) {
@@ -13,9 +13,9 @@ INetworked::INetworked(INetworked&& other) : _network_id(other._network_id) {
     NetworkManager::Registry::__register(*this);
 }
 
-const network_id& INetworked::network_id() const { return _network_id; }
+const network_id& INetworked::netid() const { return _network_id; }
 
-void INetworked::set_network_id(const ::network_id& id) {
+void INetworked::set_netid(const network_id& id) {
     if (!_invalidated) NetworkManager::Registry::__unregister(*this);
     _network_id = id; _invalidated = false;
     NetworkManager::Registry::__register(*this);

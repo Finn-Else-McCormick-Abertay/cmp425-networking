@@ -10,6 +10,8 @@ The configure step will automatically fetch all the required dependencies via gi
 > 
 > Probably stick to the pre-built binaries.
 
+The Clang build needs access to a few dlls - `libgcc_s_seh-1.dll`, `libstdc++-6.dll` and `libwinpthread-1.dll` - in order to run. If you're working with MSYS2, these will be on your path; remember to bundle them, and the resources, into builds before distribution.
+
 ## Running
 
 Command line arguments can be used to set a number parameters, listed below.

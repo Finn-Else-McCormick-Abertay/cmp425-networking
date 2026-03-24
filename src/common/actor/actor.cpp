@@ -39,28 +39,3 @@ void IActor::draw(sf::RenderTarget& target, draw_layer layer) {
     target.draw(rect);
 }
 #endif
-
-INetworkedActor::INetworkedActor(const ::network_id& network_id) : IActor(network_id.type()), INetworked(network_id) {}
-INetworkedActor::INetworkedActor(INetworkedActor&& rhs) : IActor(rhs.network_id().type()), INetworked(move(rhs)) {}
-
-/*
-dyn_arr<LogicalPacket> INetworkedActor::get_outstanding_messages() {
-    LogicalPacket update(network_id(), "motion"_packid);
-    update.contents << pos().x << pos().y << velocity().x << velocity().y << acceleration().x << acceleration().y;
-    return { move(update) };
-}
-
-result<success_t, str> INetworkedActor::read_message(LogicalPacket&& packet) {
-    if (packet.id.type() == "motion") {
-        fvec2 pos, velocity, acceleration;
-
-        packet.contents >> pos.x >> pos.y >> velocity.x >> velocity.y >> acceleration.x >> acceleration.y;
-
-        set_pos(pos);
-        set_velocity(velocity);
-        set_acceleration(acceleration);
-        return empty_success;
-    }
-    return err("");
-}
-*/

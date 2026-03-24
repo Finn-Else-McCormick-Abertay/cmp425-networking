@@ -5,7 +5,7 @@
 
 World::World() : _name(), _authority(false), INetworked(construct_noinit) {}
 
-World::World(const str& name, bool authority) : _name(name), _authority(authority), INetworked(::network_id("world"_id, name)) {}
+World::World(const str& name, bool authority) : _name(name), _authority(authority), INetworked(network_id("world"_id, name)) {}
 
 World::World(World&& rhs) : _name(move(rhs._name)), _authority(rhs._authority), _levels(move(rhs._levels)), INetworked(move(rhs)) {}
 //World::World(const World& rhs) : _name(rhs._name), _authority(rhs._authority), _levels(rhs._levels), INetworked(construct_noinit) {}
@@ -28,14 +28,14 @@ bool World::make_level(const id& level_id) {
     return success;
 }
 
-void World::network_reregister() { set_network_id(::network_id("world"_id, _name)); }
+void World::network_reregister() { set_netid(network_id("world"_id, _name)); }
 
 LogicalPacket World::package_chunks(id level_id, dyn_arr<ivec2>&& chunks) const {
     dyn_arr<str> id_args = { level_id.to_str() };
     id_args.append_range(chunks | views::transform([](const ivec2& v){ return fmt::format("{}", fmt::join(v, ",")); }));
 
     auto id = packet_id("chunk", move(id_args));
-    auto packet = LogicalPacket(network_id(), id);
+    auto packet = LogicalPacket(netid(), id);
 
     if (auto level_opt = level(level_id)) {
         const Level& level = *level_opt;
