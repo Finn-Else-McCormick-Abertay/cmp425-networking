@@ -27,9 +27,4 @@ private:
     
     virtual dyn_arr<LogicalPacket> get_outstanding_messages() override;
     virtual result<success_t, str> read_message(LogicalPacket&&) override;
-
-    static constexpr float VALID_DIFF_EPSILON = 0.000001f;
-    fvec2 _prev_sent_position;
-    fvec2 _prev_sent_velocity;
-    //fvec2 _prev_sent_accel;
 };

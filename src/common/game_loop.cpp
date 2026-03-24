@@ -23,12 +23,13 @@ void GameLoop::tick() {
 
     for (uint i = 0; i < fixed_rate_steps; ++i) {
         SystemManager::perform_fixed_tick();
+        NetworkManager::perform_network_tick();
     }
 
     // Tick network
-    _network_tick_delta += delta_time.toDuration();
+    /*_network_tick_delta += delta_time.toDuration();
     if (_network_tick_delta >= NetworkManager::NETWORK_TICK_MIN_TIMESTEP) {
         NetworkManager::perform_network_tick();
         _network_tick_delta = 0ms;
-    }
+    }*/
 }

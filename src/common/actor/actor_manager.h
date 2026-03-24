@@ -9,8 +9,6 @@
 #include <network/networked.h>
 #include <system/system.h>
 
-class PhysicsSystem;
-
 class ActorManager : INetworked, IFixedTickingSystem { DECL_SINGLETON_WITH_CONSTRUCTOR(ActorManager);
 public:
     DECL_REGISTRY(IActor);
@@ -24,12 +22,13 @@ public:
     static void update_player_authority_states();
     
     virtual void fixed_tick() override;
+    
+    static void perform_physics_step(IActor& actor);
+    static void handle_collisions(IActor& actor);
 
 private:
     set<IActor*> _known_actors;
     hashmap<str, PlayerActor> _players;
-    
-    friend class PhysicsSystem;
     
     virtual result<LogicalPacket, str> get_requested_message(const packet_id& id) const override;
     virtual result<success_t, str> read_message(LogicalPacket&&) override;

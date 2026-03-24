@@ -30,94 +30,99 @@ void ActorManager::init() {
     inst();
 }
 
-void ActorManager::fixed_tick() {
-    auto level_opt = WorldManager::level("world"_id);
-
+void ActorManager::perform_physics_step(IActor& actor) {
     auto delta = SystemManager::FIXED_TIMESTEP / 1.0s;
+    actor.set_velocity(actor.velocity() + actor.acceleration() * delta);
+    actor.set_position(actor.position() + actor.velocity() * delta);
 
-    for (auto actor : inst()._known_actors) {
-        actor->set_velocity(actor->velocity() + actor->acceleration() * delta);
-        actor->set_pos(actor->pos() + actor->velocity() * delta);
+    handle_collisions(actor);
+}
 
-        actor->set_grounded(false);
+void ActorManager::handle_collisions(IActor& actor) {
+    actor.set_grounded(false);
 
-        if (level_opt) {
-            auto& level = level_opt.value().get();
+    auto level_opt = WorldManager::level("world"_id);
+    if (!level_opt) return;
+    auto& level = level_opt.value().get();
 
-            auto actor_chunk_pos = coords::world_to_chunk(actor->pos());
-            
-            for (int i = -1; i <= 1; ++i) for (int j = -1; j <= 1; ++j) {
-                auto chunk_pos = actor_chunk_pos + ivec2(i, j);
-                auto chunk_opt = level.chunk_at(chunk_pos);
-                if (!chunk_opt) continue;
-                auto& chunk = chunk_opt.value().get();
+    auto actor_chunk_pos = coords::world_to_chunk(actor.position());
+    
+    for (int i = -1; i <= 1; ++i) for (int j = -1; j <= 1; ++j) {
+        auto chunk_pos = actor_chunk_pos + ivec2(i, j);
+        auto chunk_opt = level.chunk_at(chunk_pos);
+        if (!chunk_opt) continue;
+        auto& chunk = chunk_opt.value().get();
 
-                if (!chunk.has(tile_layer::Foreground)) continue;
-                auto& foreground = chunk.at(tile_layer::Foreground);
-                for (uint x = 0; x < Chunk::SIZE_TILES; ++x) for (uint y = 0; y < Chunk::SIZE_TILES; ++y) {
-                    uvec2 local_tile_pos = uvec2(x,y);
-                    auto tile_opt = DataManager::get_tile(foreground.tile_at(local_tile_pos));
-                    if (!tile_opt) continue;
-                    auto& tile_handle = tile_opt.value().get();
+        if (!chunk.has(tile_layer::Foreground)) continue;
+        auto& foreground = chunk.at(tile_layer::Foreground);
+        for (uint x = 0; x < Chunk::SIZE_TILES; ++x) for (uint y = 0; y < Chunk::SIZE_TILES; ++y) {
+            uvec2 local_tile_pos = uvec2(x,y);
+            auto tile_opt = DataManager::get_tile(foreground.tile_at(local_tile_pos));
+            if (!tile_opt) continue;
+            auto& tile_handle = tile_opt.value().get();
 
-                    auto collision_type = tile_handle.collision_type();
-                    // If tile has no collision, skip
-                    if (collision_type == data::TileHandle::CollisionType::None) continue;
+            auto collision_type = tile_handle.collision_type();
+            // If tile has no collision, skip
+            if (collision_type == data::TileHandle::CollisionType::None) continue;
 
-                    auto tile_global_origin = coords::chunk_to_world(chunk_pos, local_tile_pos);
+            auto tile_global_origin = coords::chunk_to_world(chunk_pos, local_tile_pos);
 
-                    // If tile is a solid block
-                    if (collision_type == data::TileHandle::CollisionType::Block) {
-                        frect2 tile_global_rect = frect2(tile_global_origin, fvec2(TILE_SIZE, TILE_SIZE));
+            // If tile is a solid block
+            if (collision_type == data::TileHandle::CollisionType::Block) {
+                frect2 tile_global_rect = frect2(tile_global_origin, fvec2(TILE_SIZE, TILE_SIZE));
 
-                        if (overlap(actor->global_rect(), tile_global_rect)) {
-                            fvec2 overlap_amount = overlap_by(actor->global_rect(), tile_global_rect);
-                            fvec2 position_correction = fvec2();
-                            fvec2 velocity_correction = fvec2();
-                            if (overlap_amount.x < overlap_amount.y) {
-                                // Prevent getting stuck while sliding on floors
-                                if (overlap_amount.y < 2) continue;
+                if (overlap(actor.global_rect(), tile_global_rect)) {
+                    fvec2 overlap_amount = overlap_by(actor.global_rect(), tile_global_rect);
+                    fvec2 position_correction = fvec2();
+                    fvec2 velocity_correction = fvec2();
+                    if (overlap_amount.x < overlap_amount.y) {
+                        // Prevent getting stuck while sliding on floors
+                        if (overlap_amount.y < 2) continue;
 
-                                bool is_to_right = actor->pos().x > tile_global_origin.x + (TILE_SIZE / 2);
+                        bool is_to_right = actor.position().x > tile_global_origin.x + (TILE_SIZE / 2);
 
-                                position_correction.x = overlap_amount.x * -1;
-                                if (is_to_right) position_correction.x *= -1;
+                        position_correction.x = overlap_amount.x * -1;
+                        if (is_to_right) position_correction.x *= -1;
 
-                                if ((is_to_right && actor->velocity().x < 0) || (!is_to_right && actor->velocity().x > 0)) {
-                                    velocity_correction.x = -actor->velocity().x;
-                                }
-                            }
-                            else {
-                                // Prevent getting stuck while sliding on walls
-                                if (overlap_amount.x < 2) continue;
-
-                                bool is_above = actor->pos().y < tile_global_origin.y + (TILE_SIZE / 2);
-
-                                position_correction.y = overlap_amount.y;
-                                if (is_above) position_correction.y *= -1;
-
-                                if ((is_above && actor->velocity().y > 0) || (!is_above && actor->velocity().y < 0)) {
-                                    velocity_correction.y = -actor->velocity().y;
-                                    // Friction
-                                    float max_friction = actor->velocity().y * 0.2f;
-                                    float true_friction = min(abs(actor->velocity().x), max_friction);
-                                    velocity_correction.x = -sign(actor->velocity().x) * true_friction;
-                                }
-
-                                if (is_above) actor->set_grounded(true);
-                            }
-
-                            actor->set_pos(actor->pos() + position_correction);
-                            actor->set_velocity(actor->velocity() + velocity_correction);
-                            //print<info, ActorManager>("Collision : {} {}", position_correction, velocity_correction);
+                        if ((is_to_right && actor.velocity().x < 0) || (!is_to_right && actor.velocity().x > 0)) {
+                            velocity_correction.x = -actor.velocity().x;
                         }
                     }
-                    // Assert that all collision types are handled (in case I add more later on)
-                    else print<error, ActorManager>("Unhandled collision type {}.", std::to_underlying(collision_type));
+                    else {
+                        // Prevent getting stuck while sliding on walls
+                        if (overlap_amount.x < 2) continue;
+
+                        bool is_above = actor.position().y < tile_global_origin.y + (TILE_SIZE / 2);
+
+                        position_correction.y = overlap_amount.y;
+                        if (is_above) position_correction.y *= -1;
+
+                        if ((is_above && actor.velocity().y > 0) || (!is_above && actor.velocity().y < 0)) {
+                            velocity_correction.y = -actor.velocity().y;
+                            // Friction
+                            float max_friction = actor.velocity().y * 0.2f;
+                            float true_friction = min(abs(actor.velocity().x), max_friction);
+                            velocity_correction.x = -sign(actor.velocity().x) * true_friction;
+                        }
+
+                        if (is_above) actor.set_grounded(true);
+                    }
+
+                    actor.set_position(actor.position() + position_correction);
+                    actor.set_velocity(actor.velocity() + velocity_correction);
+                    //print<info, ActorManager>("Collision : {} {}", position_correction, velocity_correction);
                 }
             }
+            // Assert that all collision types are handled (in case I add more later on)
+            else print<error, ActorManager>("Unhandled collision type {}.", std::to_underlying(collision_type));
         }
     }
+
+}
+
+void ActorManager::fixed_tick() {
+    // Progress physics
+    for (auto actor : inst()._known_actors) perform_physics_step(*actor);
 
     #ifdef CLIENT
     // Handle player camera
@@ -126,7 +131,7 @@ void ActorManager::fixed_tick() {
             auto cam_opt = RenderManager::get_camera("player");
             if (cam_opt) {
                 auto& cam = cam_opt.value().get();
-                cam.set_position(player_actor.pos());
+                cam.set_position(player_actor.position());
             }
             break;
         }

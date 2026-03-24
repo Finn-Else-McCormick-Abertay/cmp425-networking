@@ -47,9 +47,6 @@ public:
     static void set_server_address(const SocketAddress&);
     
     static str debug_message();
-    
-    // Set a minimum time between network ticks to avoid the sockets getting overwhelmed
-    static constexpr chrono::microseconds NETWORK_TICK_MIN_TIMESTEP = 4ms;
 private:
     static constexpr Port SERVER_PORT = 5300;
     void connect_listener(Port port = SERVER_PORT);
