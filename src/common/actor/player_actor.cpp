@@ -4,13 +4,10 @@
 #include <system/system_manager.h>
 #include <actor/actor_manager.h>
 
-PlayerActor::PlayerActor(const str& ident) : _player_ident(ident), INetworkedActor(network_id("player"_id, ident)) {
-    set_local_rect(DEFAULT_RECT);
-}
+PlayerActor::PlayerActor(const str& ident, actor::NetworkMode network_mode) : _player_ident(ident), INetworkedActor(
+    network_id("player"_id, ident), { { -5, -20 }, { 10, 20 } }, actor::PhysicsMode::DYNAMIC, network_mode) {}
 
-PlayerActor::PlayerActor(PlayerActor&& rhs) : _player_ident(move(rhs._player_ident)), INetworkedActor(move(rhs)) {
-    set_local_rect(DEFAULT_RECT);
-}
+PlayerActor::PlayerActor(PlayerActor&& rhs) : _player_ident(move(rhs._player_ident)), INetworkedActor(move(rhs)) {}
 
 const str& PlayerActor::ident() const { return _player_ident; }
 
@@ -25,7 +22,7 @@ void PlayerActor::draw(sf::RenderTarget& target, draw_layer layer) {
     player_name_label.setOrigin(sf::fvec2(label_size.x / 2, label_size.y));
 
     fvec2 label_pos = global_rect().origin +
-        fvec2(local_rect().size.x / 2, -local_rect().size.y / 2);
+        fvec2(rect().size.x / 2, -rect().size.y / 2);
     player_name_label.setPosition(to_sfvec(label_pos));
 
     target.draw(player_name_label);

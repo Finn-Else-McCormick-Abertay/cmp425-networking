@@ -7,8 +7,8 @@ void SystemManager::perform_tick(float dt) {
 }
 
 void SystemManager::perform_fixed_tick() {
-    for (auto system : inst()._fixed_ticking) system->fixed_tick();
     ++inst()._elapsed_fixed_ticks;
+    for (auto system : inst()._fixed_ticking) system->fixed_tick();
 }
 
 uint64 SystemManager::get_fixed_tick() { return inst()._elapsed_fixed_ticks; }

@@ -5,13 +5,13 @@
 #include <prelude/containers.h>
 #include <util/helper/singleton.h>
 #include <actor/actor.h>
+#include <actor/networked_actor.h>
 #include <actor/player_actor.h>
-#include <network/networked.h>
 #include <system/system.h>
 
 class ActorManager : INetworked, IFixedTickingSystem { DECL_SINGLETON_WITH_CONSTRUCTOR(ActorManager);
 public:
-    DECL_REGISTRY(IActor);
+    DECL_MULTI_REGISTRY(IActor, INetworkedActor);
 
     static void init();
 
@@ -24,10 +24,12 @@ public:
     virtual void fixed_tick() override;
     
     static void perform_physics_step(IActor& actor);
-    static void handle_collisions(IActor& actor);
+    static void handle_collisions(IActor& actor, bool apply_friction = true);
 
 private:
     set<IActor*> _known_actors;
+    set<INetworkedActor*> _known_networked_actors;
+
     hashmap<str, PlayerActor> _players;
     
     virtual result<LogicalPacket, str> get_requested_message(const packet_id& id) const override;

@@ -21,32 +21,6 @@ public:
     template<convertible_to<T> U = T, convertible_to<T> V = T>
     constexpr rect(const vec<U, Size>& origin, const vec<V, Size>& size) : origin{origin}, size{size} {}
 
-    [[nodiscard]] constexpr vec<T, Size>& operator[](size_t index) noexcept {
-        switch (index) {
-            default:
-            case 0: return origin;
-            case 1: return size;
-        }
-    }
-
-    [[nodiscard]] constexpr const vec<T, Size>& operator[](size_t index) const noexcept {
-        switch (index) {
-            default:
-            case 0: return origin;
-            case 1: return size;
-        }
-    }
-
-    [[nodiscard]] constexpr vec<T, Size>& at(size_t index) {
-        VMATH_HPP_THROW_IF(index >= size, std::out_of_range("rect::at"));
-        return (*this)[index];
-    }
-
-    [[nodiscard]] constexpr const vec<T, Size>& at(size_t index) const {
-        VMATH_HPP_THROW_IF(index >= size, std::out_of_range("rect::at"));
-        return (*this)[index];
-    }
-
     template<convertible_to<T> U = T> requires (!unsigned_integral<T>)
     static rect<T, Size> centred(const vec<U, Size>& size) {
         rect<T, Size> ret { -size, size };
@@ -119,8 +93,8 @@ template<typename T, typename U, size_t Size>
 bool overlap(const rect<T, Size>& lhs, const rect<U, Size>& rhs) {
     for (size_t i = 0; i < Size; ++i) {
         if (!maths_impl::overlap(
-            lhs[0][i], lhs[0][i] + lhs[1][i],
-            rhs[0][i], rhs[0][i] + rhs[1][i]
+            lhs.origin[i], lhs.origin[i] + lhs.size[i],
+            rhs.origin[i], rhs.origin[i] + rhs.size[i]
         )) return false;
     }
     return true;

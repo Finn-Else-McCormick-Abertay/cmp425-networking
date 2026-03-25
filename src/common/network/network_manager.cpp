@@ -290,17 +290,17 @@ void NetworkManager::request(const network_id& owner, const packet_id& packet_id
 }
 
 void NetworkManager::broadcast(const LogicalPacket& packet, const opt<SocketAddress>& target) {
-    print<debug, NetworkManager>("BROADCAST {} {} {}", packet.owner, packet.id, target);
+    //print<debug, NetworkManager>("BROADCAST {} {} {}", packet.owner, packet.id, target);
     inst().send(packet, target);
 }
 
 void NetworkManager::broadcast(LogicalPacket&& packet, const opt<SocketAddress>& target) {
-    print<debug, NetworkManager>("BROADCAST {} {} {}", packet.owner, packet.id, target);
+    //print<debug, NetworkManager>("BROADCAST {} {} {}", packet.owner, packet.id, target);
     inst().send(move(packet), target);
 }
 
 bool NetworkManager::broadcast(const network_id& owner, const packet_id& packet_id, const opt<SocketAddress>& target) {
-    print<debug, NetworkManager>("BROADCAST {} {} {}", owner, packet_id, target);
+    //print<debug, NetworkManager>("BROADCAST {} {} {}", owner, packet_id, target);
     opt<LogicalPacket> answer_opt = nullopt;
     if (inst()._networked_by_id.contains(owner)) answer_opt = inst()._networked_by_id.at(owner)->request(packet_id);
 
@@ -399,7 +399,7 @@ str NetworkManager::debug_message() {
     return fmt::format("{}", fmt::join(dyn_arr<str>{
         fmt::format("Username: {} | UID: {}", inst()._username, inst().user_uid().value_or("null")),
         fmt::format("Server: {}", inst()._server_address.transform([](auto& value) { return fmt::format("{}", value); }).value_or("null")),
-        //fmt::format("Networked Object Ids: {}", fmt::join(views::keys(inst()._networked_by_id), ", ")),
+        fmt::format("Networked Object Ids: {}", fmt::join(views::keys(inst()._networked_by_id), ", ")),
         fmt::format("Fixed Tick: {}", SystemManager::get_fixed_tick()),
     }, "\n"));
 }
