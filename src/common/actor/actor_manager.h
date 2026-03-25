@@ -10,8 +10,9 @@
 #include <system/system.h>
 #include <util/helper/glaze_enum_helper.h>
 
-namespace actor { enum class InterpolationMode { DEFAULT, NONE, LINEAR }; }
-ENUM_GLAZE_AND_FORMATTER(actor::InterpolationMode, (DEFAULT, NONE, LINEAR));
+// __COUNT__ is used for looping over / cycling through values
+namespace actor { enum class InterpolationMode { DEFAULT, NONE, NONE_MOTION, LINEAR_POSITION, LINEAR_MOTION, __COUNT__ }; }
+ENUM_GLAZE_AND_FORMATTER(actor::InterpolationMode, (DEFAULT, NONE, NONE_MOTION, LINEAR_POSITION, LINEAR_MOTION));
 
 class ActorManager : INetworked, IFixedTickingSystem { DECL_SINGLETON_WITH_CONSTRUCTOR(ActorManager);
 public:
@@ -19,10 +20,10 @@ public:
 
     static void init();
     
-    static actor::InterpolationMode interpolation_mode();
+    static actor::InterpolationMode interpolation_mode(bool validate = true);
     static void set_interpolation_mode(actor::InterpolationMode);
 
-    static constexpr actor::InterpolationMode CLIENT_DEFAULT_INTERPOLATION = actor::InterpolationMode::LINEAR;
+    static constexpr actor::InterpolationMode CLIENT_DEFAULT_INTERPOLATION = actor::InterpolationMode::NONE_MOTION;
     static constexpr actor::InterpolationMode SERVER_DEFAULT_INTERPOLATION = actor::InterpolationMode::NONE;
 
     static PlayerActor& register_player(const str& ident, bool broadcast = true, bool fail_quiet = false);

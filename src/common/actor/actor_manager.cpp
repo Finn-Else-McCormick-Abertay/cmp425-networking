@@ -30,8 +30,8 @@ void ActorManager::init() {
     inst();
 }
 
-actor::InterpolationMode ActorManager::interpolation_mode() {
-    if (inst()._interpolation_mode == actor::InterpolationMode::DEFAULT) {
+actor::InterpolationMode ActorManager::interpolation_mode(bool validate) {
+    if (validate && inst()._interpolation_mode == actor::InterpolationMode::DEFAULT) {
         #ifdef CLIENT
         return ActorManager::CLIENT_DEFAULT_INTERPOLATION;
         #elifdef SERVER
@@ -235,10 +235,10 @@ result<success_t, str> ActorManager::read_message(LogicalPacket&& packet) {
 
 dyn_arr<str> ActorManager::debug_message() {
     dyn_arr<str> messages {
-        fmt::format("Interpolation: {}", inst()._interpolation_mode),
+        fmt::format("Interpolation: {}", interpolation_mode()),
     };
     for (auto& actor : inst()._known_networked_actors) {
-        str actor_info = fmt::format("{:<10} {:>10}", actor->netid(), fmt::format("({})", actor->network_mode()));
+        str actor_info = fmt::format("{:<15} {:>15}", actor->netid(), fmt::format("({})", actor->network_mode()));
         str motion_info = fmt::format("Pos {:n: > 8.0f} | Vel {:n: > 8.0f} | Accel {:n: > 8.0f}", actor->position(), actor->velocity(), actor->acceleration());
         messages.push_back(fmt::format("{} : {}", actor_info, motion_info));
     }

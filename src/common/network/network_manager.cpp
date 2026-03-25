@@ -72,7 +72,6 @@ void NetworkManager::connect_listener(Port port) {
     disconnect_listener();
     _client_listener = make_opt<TcpListener>();
     _client_listener->setBlocking(false);
-    //inst()._selector.add(*_client_listener);
     if (_client_listener->listen(port) != Socket::Status::Done)
         return print<error, NetworkManager>("Failed to begin listening on port {}.", port);
     print<success, NetworkManager>("Listening on port {}.", port);
@@ -80,7 +79,6 @@ void NetworkManager::connect_listener(Port port) {
 void NetworkManager::disconnect_listener() {
     if (_client_listener) {
         print<success, NetworkManager>("Stopped listening on port {}.", _client_listener->getLocalPort());
-        //inst()._selector.remove(*_client_listener);
         _client_listener->close();
         _client_listener = nullopt;
     }
@@ -98,14 +96,12 @@ void NetworkManager::register_socket(sf::TcpSocket&& socket) {
     SocketAddress address { *ip_address, port };
     socket.setBlocking(false);
     inst()._sockets[address] = move(socket);
-    //inst()._selector.add(inst()._sockets.at(address));
     print<network_info>("Connected to {}.", address);
 }
 
 void NetworkManager::disconnect(const SocketAddress& address) {
     if (!_sockets.contains(address)) return print<error, NetworkManager>("Could not disconnect from non-existent socket {}.", address);
     auto address_str = address.to_str();
-    //inst()._selector.remove(inst()._sockets.at(address));
     _sockets[address].disconnect(); inst()._sockets.erase(address);
     print<success, NetworkManager>("Disconnected from {}.", address_str); // The SocketAddress object is invalidated upon closing
 }

@@ -55,23 +55,32 @@ void InputManager::recalculate_complex_action(Action* action) {
 }
 
 void InputManager::setup_default_binds() {
-    bind(Key::F3, actions::debug::modifier);
+    // Debug
+    bind(Key::LShift, actions::debug::modifier_invert);
+
     bind(Key::T, actions::debug::tile);
     bind(Key::Y, actions::debug::tick);
     bind(Key::H, actions::debug::actor);
     bind(Key::N, actions::debug::network);
 
+    bind(Key::I, actions::debug::cycle_interpolation);
+    bind(Key::O, actions::debug::default_interpolation);
+    bind(Key::P, actions::debug::disable_interpolation);
+
+    // Cursor
     bind(Mouse::Motion, actions::cursor);
     bind(Mouse::Button::Left, actions::click);
     bind(Mouse::Button::Left, actions::place);
     bind(Mouse::Button::Right, actions::destroy);
 
+    // Menu
     bind(Key::Enter, actions::select);
     bind(Controller::Button::XBOX_A, actions::select);
 
     bind(Key::Escape, actions::back);
     bind(Controller::Button::XBOX_B, actions::select);
 
+    // Player movement
     bind(ScanCode::Space, actions::jump);
     bind(ScanCode::LControl, actions::run);
     

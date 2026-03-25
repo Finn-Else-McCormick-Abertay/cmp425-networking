@@ -12,11 +12,24 @@
 #include <alias/ranges.h>
 
 void DebugSystem::tick(float dt) {
-    //if (!actions::debug::modifier.down()) return;
-    if (actions::debug::tick.just_pressed())    _show_tick_debug = !_show_tick_debug;
-    if (actions::debug::actor.just_pressed())   _show_actor_debug = !_show_actor_debug;
-    if (actions::debug::tile.just_pressed())    _show_tile_debug = !_show_tile_debug;
+    if (actions::debug::tick.just_pressed())    _show_tick_debug    = !_show_tick_debug;
+    if (actions::debug::actor.just_pressed())   _show_actor_debug   = !_show_actor_debug;
+    if (actions::debug::tile.just_pressed())    _show_tile_debug    = !_show_tile_debug;
     if (actions::debug::network.just_pressed()) _show_network_debug = !_show_network_debug;
+
+    if (actions::debug::default_interpolation.just_pressed()) ActorManager::set_interpolation_mode(actor::InterpolationMode::DEFAULT);    
+    if (actions::debug::disable_interpolation.just_pressed()) ActorManager::set_interpolation_mode(actor::InterpolationMode::NONE);
+    if (actions::debug::cycle_interpolation.just_pressed()) {
+        int cycle_direction = actions::debug::modifier_invert.down() ? -1 : 1;
+        auto next_interpolation_mode = (actor::InterpolationMode)(std::to_underlying(ActorManager::interpolation_mode()) + cycle_direction);
+
+        if (next_interpolation_mode == actor::InterpolationMode::__COUNT__)
+            next_interpolation_mode = (actor::InterpolationMode)(std::to_underlying(actor::InterpolationMode::DEFAULT) + 1);
+        else if (next_interpolation_mode == actor::InterpolationMode::DEFAULT)
+            next_interpolation_mode = (actor::InterpolationMode)(std::to_underlying(actor::InterpolationMode::__COUNT__) - 1);
+            
+        ActorManager::set_interpolation_mode(next_interpolation_mode);
+    }
 }
 
 dyn_arr<draw_layer> DebugSystem::draw_layers() const { return { layers::tile::foreground + 1, layers::debug::ui_overlay }; }
@@ -66,7 +79,6 @@ void DebugSystem::draw(sf::RenderTarget& target, draw_layer layer) {
             debug_text.setPosition(to_sfvec(RenderManager::pixel_to_ui(actions::cursor.value())));
             target.draw(debug_text);
         }
-
         
         dyn_arr<str> debug_messages;
         if (_show_tick_debug) debug_messages.push_back(fmt::format("Fixed Tick: {}", SystemManager::get_fixed_tick()));

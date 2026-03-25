@@ -52,27 +52,31 @@ result<success_t, str> INetworkedActor::read_message(LogicalPacket&& packet) {
 
         int64 tick_diff = (int64)SystemManager::get_fixed_tick() - (int64)packet.time;
         auto time_diff = SystemManager::FIXED_TIMESTEP * tick_diff / 1.0s;
-        
-        // Ignore very out of date packets - the physics has been running locally for the actor, and this will be more accurate than an interpolation from an old packet
-        if (abs(tick_diff) > 3) {
-            print<warning, PlayerActor>("High tick diff of {} : ignoring packet", tick_diff);
-            return empty_success;
-        }
 
         actor::InterpolationMode interpolation_mode = ActorManager::interpolation_mode();
         switch (interpolation_mode) {
             case actor::InterpolationMode::NONE: {
                 set_position(recieved_position);
             } break;
-            case actor::InterpolationMode::LINEAR: {
+            case actor::InterpolationMode::NONE_MOTION: {
+                set_position(recieved_position);
+                set_velocity(recieved_velocity);
+                set_acceleration(recieved_acceleration);
+            } break;
+            case actor::InterpolationMode::LINEAR_POSITION:
+            case actor::InterpolationMode::LINEAR_MOTION: {
                 fvec2 interpolated_position = recieved_position + recieved_velocity * time_diff; 
-                fvec2 interpolated_velocity = recieved_velocity + recieved_acceleration * time_diff;
-
                 fvec2 position_delta = interpolated_position - position();
                 
                 set_position(interpolated_position);
-                set_velocity(interpolated_velocity);
-                set_acceleration(recieved_acceleration);
+
+                // Ignore very out of date packets - the physics has been running locally for the actor, and this will likely be more accurate than an interpolation from an old packet
+                if (interpolation_mode == actor::InterpolationMode::LINEAR_MOTION && abs(tick_diff) <= 5) {
+                    fvec2 interpolated_velocity = recieved_velocity + recieved_acceleration * time_diff;
+                    
+                    set_velocity(interpolated_velocity);
+                    set_acceleration(recieved_acceleration);
+                }
                 
                 // If moving far enough to potentially clip through tiles, perform collision check
                 float position_delta_magnitude = vmath_hpp::length(position_delta);
