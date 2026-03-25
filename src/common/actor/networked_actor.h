@@ -4,10 +4,10 @@
 #include <network/networked.h>
 #include <util/helper/enum_serialization.h>
 
-namespace actor { enum class NetworkMode { AUTHORITY, LISTENER, RELAY }; }
-ENUM_FORMATTER(actor::NetworkMode, (AUTHORITY, LISTENER, RELAY));
+namespace actor { enum class NetworkMode { NONE, AUTHORITY, LISTENER, RELAY }; }
+ENUM_FORMATTER(actor::NetworkMode, (NONE, AUTHORITY, LISTENER, RELAY));
 
-class INetworkedActor : public IActor, protected INetworked {
+class INetworkedActor : public IActor, public INetworked {
 public:
     actor::NetworkMode network_mode() const; void set_network_mode(actor::NetworkMode);
     bool is_authority() const;
@@ -16,7 +16,7 @@ public:
 protected:
     actor::NetworkMode _network_mode;
 
-    INetworkedActor(const network_id&, const frect2& rect = frect2(), actor::PhysicsMode = actor::PhysicsMode::DYNAMIC, actor::NetworkMode = actor::NetworkMode::AUTHORITY);
+    INetworkedActor(const network_id&, const frect2& rect = frect2(), actor::PhysicsMode = actor::PhysicsMode::DYNAMIC, actor::NetworkMode = actor::NetworkMode::NONE);
     INetworkedActor(INetworkedActor&&);
     virtual ~INetworkedActor();
 

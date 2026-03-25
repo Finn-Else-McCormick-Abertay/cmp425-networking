@@ -25,12 +25,13 @@ int main(int argc, char** argv) {
     DataManager::reload();
     InputManager::init(); InputManager::setup_default_binds();
 
-    handle_cli(argc, argv, cli::dirs() | cli::client());
+    handle_cli(argc, argv, cli::dirs() | cli::client() | cli::interpolation());
 
     NetworkManager::init();
     WorldManager::init();
     ActorManager::init();
 
+    // Create player camera
     auto player_camera = Camera("player");
 
     // Systems

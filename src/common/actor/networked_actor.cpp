@@ -16,9 +16,9 @@ INetworkedActor::INetworkedActor(INetworkedActor&& rhs) : _network_mode(rhs._net
 }
 
 actor::NetworkMode INetworkedActor::network_mode() const { return _network_mode; }
-void INetworkedActor::set_network_mode(actor::NetworkMode mode) {
-    _network_mode = mode;
-    print<debug, INetworkedActor>("{} acting as {}.", netid(), network_mode());
+void INetworkedActor::set_network_mode(actor::NetworkMode new_mode) {
+    if (new_mode != _network_mode) print<debug, INetworkedActor>("{} '{}' acting as {}.", netid().type(), netid().inst(), new_mode);
+    _network_mode = new_mode;
 }
 
 bool INetworkedActor::is_authority() const { return network_mode() == actor::NetworkMode::AUTHORITY; }
@@ -51,33 +51,38 @@ result<success_t, str> INetworkedActor::read_message(LogicalPacket&& packet) {
         packet.contents >> recieved_position.x >> recieved_position.y >> recieved_velocity.x >> recieved_velocity.y >> recieved_acceleration.x >> recieved_acceleration.y;
 
         int64 tick_diff = (int64)SystemManager::get_fixed_tick() - (int64)packet.time;
+        auto time_diff = SystemManager::FIXED_TIMESTEP * tick_diff / 1.0s;
+        
         // Ignore very out of date packets - the physics has been running locally for the actor, and this will be more accurate than an interpolation from an old packet
         if (abs(tick_diff) > 3) {
             print<warning, PlayerActor>("High tick diff of {} : ignoring packet", tick_diff);
             return empty_success;
         }
 
-        //print<debug, PlayerActor>("{} recieved motion from {} at {}. Tick diff: {}", netid(), packet.time, SystemManager::get_fixed_tick(), tick_diff);
-        auto time_diff = SystemManager::FIXED_TIMESTEP * tick_diff / 1.0s;
+        actor::InterpolationMode interpolation_mode = ActorManager::interpolation_mode();
+        switch (interpolation_mode) {
+            case actor::InterpolationMode::NONE: {
+                set_position(recieved_position);
+            } break;
+            case actor::InterpolationMode::LINEAR: {
+                fvec2 interpolated_position = recieved_position + recieved_velocity * time_diff; 
+                fvec2 interpolated_velocity = recieved_velocity + recieved_acceleration * time_diff;
 
-        fvec2 interpolated_position = recieved_position + recieved_velocity * time_diff; 
-        fvec2 interpolated_velocity = recieved_velocity + recieved_acceleration * time_diff;
-
-        fvec2 position_delta = interpolated_position - position();
-
-        set_position(recieved_position);
-        //set_velocity(recieved_velocity);
-        //set_acceleration(recieved_acceleration);
-
-        //set_position(interpolated_position);
-        //set_velocity(interpolated_velocity);
-        //set_acceleration(recieved_acceleration);
-
-        // If moving far enough to potentially clip through tiles, perform collision check
-        float position_delta_magnitude = vmath_hpp::length(position_delta);
-        //print<debug, INetworkedActor>("Pos diff {}", position_delta_magnitude);
-        if (position_delta_magnitude > 4) {
-            ActorManager::handle_collisions(*this, false);
+                fvec2 position_delta = interpolated_position - position();
+                
+                set_position(interpolated_position);
+                set_velocity(interpolated_velocity);
+                set_acceleration(recieved_acceleration);
+                
+                // If moving far enough to potentially clip through tiles, perform collision check
+                float position_delta_magnitude = vmath_hpp::length(position_delta);
+                //print<debug, INetworkedActor>("Pos diff {}", position_delta_magnitude);
+                if (position_delta_magnitude >= 4) {
+                    ActorManager::handle_collisions(*this, false);
+                }
+                
+            } break;
+            default: return err(fmt::format("Unhandled interpolation mode '{}'.", interpolation_mode));
         }
         return empty_success;
     }

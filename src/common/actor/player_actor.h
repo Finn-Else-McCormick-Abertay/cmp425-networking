@@ -4,7 +4,7 @@
 
 class PlayerActor : public INetworkedActor {
 public:
-    PlayerActor(const str& ident, actor::NetworkMode = actor::NetworkMode::AUTHORITY);
+    PlayerActor(const str& ident, actor::NetworkMode = actor::NetworkMode::NONE);
     PlayerActor(PlayerActor&&);
 
     const str& ident() const;

@@ -3,10 +3,12 @@
 #include <save/save_manager.h>
 #include <network/network_manager.h>
 #include <regex>
+#include <world/coord_helpers.h>
+#include <maths/rect.h>
 
 DEFINE_SINGLETON(WorldManager);
 
-WorldManager::WorldManager() : INetworked(network_id("singleton"_id, "world_manager")) {}
+WorldManager::WorldManager() : INetworked("singleton#world_manager"_netid) {}
 
 opt_ref<World> WorldManager::world() {
     if (inst()._world) return *inst()._world;
@@ -53,7 +55,24 @@ void WorldManager::internal_load(World&& world, bool authority) {
     inst()._world->_authority = authority;
     inst()._world->network_reregister();
 
-    if (auto default_level = inst()._world->level("world"_id); !default_level) inst()._world->make_level("world"_id);
+    if (auto default_level = inst()._world->level("world"_id); !default_level) {
+        inst()._world->make_level("world"_id);
+        if (auto level_opt = inst()._world->level("world"_id); level_opt) {
+            // Make starting platform so you're not falling into the void endlessly
+            irect2 platform { { -3, 0 }, { 6, 1 } };
+
+            auto& level = level_opt.value().get();
+            for (int x = platform.origin.x; x < platform.origin.x + platform.size.x; ++x ) {
+                for (int y = platform.origin.y; y < platform.origin.y + platform.size.y; ++y ) {
+                    auto [chunk_pos, local_pos] = coords::tile_to_chunk_local_tile(ivec2(x,y));
+                    
+                    auto& chunk = level.get_or_make_chunk_at(chunk_pos);
+                    auto& layer = chunk[tile_layer::Foreground];
+                    layer.set_tile_at(local_pos, "stone"_id);
+                }
+            }
+        }
+    }
 
     print<success, WorldManager>("Loaded world '{}' as {}authority.", inst()._world->name(), authority ? "" : "non-");
     if (authority) NetworkManager::broadcast(inst().netid(), packet_id("world!loaded"));

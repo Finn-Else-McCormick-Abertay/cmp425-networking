@@ -8,6 +8,7 @@
 
 namespace cli {
     lyra::cli dirs();
+    lyra::cli interpolation();
     lyra::cli client();
     lyra::cli world();
 }

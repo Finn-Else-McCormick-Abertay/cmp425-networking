@@ -66,7 +66,7 @@ set(COMMON_COMPILE_OPTIONS
 )
 
 # Client
-set(CLIENT_NAME ${PROJECT_NAME}_client)
+set(CLIENT_NAME client)
 add_executable(${CLIENT_NAME})
 target_compile_features(${CLIENT_NAME} PUBLIC cxx_std_23)
 target_compile_options(${CLIENT_NAME} PRIVATE ${COMMON_COMPILE_OPTIONS})
@@ -75,7 +75,7 @@ target_include_directories(${CLIENT_NAME} PRIVATE src/client/ src/common/ src/ut
 target_compile_definitions(${CLIENT_NAME} PRIVATE CLIENT ${COMMON_COMPILE_DEFINITIONS})
 
 # Server
-set(SERVER_NAME ${PROJECT_NAME}_server)
+set(SERVER_NAME server)
 add_executable(${SERVER_NAME})
 target_compile_features(${SERVER_NAME} PUBLIC cxx_std_23)
 target_compile_options(${SERVER_NAME} PRIVATE ${COMMON_COMPILE_OPTIONS})

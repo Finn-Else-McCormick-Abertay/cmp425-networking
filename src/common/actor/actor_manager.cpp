@@ -11,6 +11,7 @@
 #include <render/render_manager.h>
 #endif
 #include <system/system_manager.h>
+#include <fmt/core.h>
 
 using namespace vmath_hpp;
 
@@ -29,8 +30,23 @@ void ActorManager::init() {
     inst();
 }
 
+actor::InterpolationMode ActorManager::interpolation_mode() {
+    if (inst()._interpolation_mode == actor::InterpolationMode::DEFAULT) {
+        #ifdef CLIENT
+        return ActorManager::CLIENT_DEFAULT_INTERPOLATION;
+        #elifdef SERVER
+        return ActorManager::SERVER_DEFAULT_INTERPOLATION;
+        #endif
+    }
+    return inst()._interpolation_mode;
+}
+void ActorManager::set_interpolation_mode(actor::InterpolationMode new_mode) {
+    inst()._interpolation_mode = new_mode;
+    print<info, ActorManager>("Set interpolation mode to {}{}", new_mode, new_mode == actor::InterpolationMode::DEFAULT ? fmt::format(" ({})", interpolation_mode()) : "");
+}
+
 void ActorManager::perform_physics_step(IActor& actor) {
-    //if (actor.physics_mode() != actor::PhysicsMode::DYNAMIC) return;
+    if (actor.physics_mode() != actor::PhysicsMode::DYNAMIC) return;
 
     auto delta = SystemManager::FIXED_TIMESTEP / 1.0s;
     actor.set_velocity(actor.velocity() + actor.acceleration() * delta);
@@ -106,9 +122,10 @@ void ActorManager::handle_collisions(IActor& actor, bool apply_friction) {
                         if ((is_above && actor.velocity().y > 0) || (!is_above && actor.velocity().y < 0)) {
                             velocity_correction.y = -actor.velocity().y;
                             if (apply_friction) {
-                                float max_friction = actor.velocity().y * 0.15f;
-                                float true_friction = min(abs(actor.velocity().x), max_friction);
-                                velocity_correction.x = -sign(actor.velocity().x) * true_friction;
+                                float friction_coefficient = abs(actor.velocity().x) > 1.f ? 0.15f : 0.5f;
+                                float max_friction_magnitude = actor.velocity().y * friction_coefficient;
+                                float true_friction_magnitude = min(abs(actor.velocity().x), max_friction_magnitude);
+                                velocity_correction.x = -sign(actor.velocity().x) * true_friction_magnitude;
                             }
                         }
 
@@ -150,7 +167,7 @@ void ActorManager::fixed_tick() {
 
 // Something's wrong here. I don't think try emplace works the way I think it does. Hacking around it elsewhere
 PlayerActor& ActorManager::register_player(const str& ident, bool broadcast, bool fail_quiet) {
-    auto [it, is_new] = inst()._players.try_emplace(ident, PlayerActor(ident, actor::NetworkMode::LISTENER));
+    auto [it, is_new] = inst()._players.try_emplace(ident, PlayerActor(ident));
     update_player_authority_states();
     if (is_new && broadcast) NetworkManager::broadcast(LogicalPacket(inst().netid(), packet_id("player", { "connected", ident })));
 
@@ -214,4 +231,16 @@ result<success_t, str> ActorManager::read_message(LogicalPacket&& packet) {
         else return err("Invalid event arg. Must be one of 'connected', 'disconnected' or 'existing'.");
     }
     return err("Unknown packet type.");
+}
+
+dyn_arr<str> ActorManager::debug_message() {
+    dyn_arr<str> messages {
+        fmt::format("Interpolation: {}", inst()._interpolation_mode),
+    };
+    for (auto& actor : inst()._known_networked_actors) {
+        str actor_info = fmt::format("{:<10} {:>10}", actor->netid(), fmt::format("({})", actor->network_mode()));
+        str motion_info = fmt::format("Pos {:n: > 8.0f} | Vel {:n: > 8.0f} | Accel {:n: > 8.0f}", actor->position(), actor->velocity(), actor->acceleration());
+        messages.push_back(fmt::format("{} : {}", actor_info, motion_info));
+    }
+    return messages;
 }

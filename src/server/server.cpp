@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
 
     DataManager::reload();
     
-    handle_cli(argc, argv, cli::dirs() | cli::world());
+    handle_cli(argc, argv, cli::dirs() | cli::world() | cli::interpolation());
     
     NetworkManager::init();
     WorldManager::init();

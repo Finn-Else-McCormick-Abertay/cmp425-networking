@@ -4,14 +4,19 @@
 #include <assets/asset_manager.h>
 #include <render/render_manager.h>
 #include <network/network_manager.h>
+#include <actor/actor_manager.h>
+#include <system/system_manager.h>
 #include <world/world_manager.h>
 #include <world/coord_helpers.h>
+#include <prelude/format.h>
+#include <alias/ranges.h>
 
 void DebugSystem::tick(float dt) {
-    //if (actions::debug::modifier.down()) {
-    if (actions::debug::tile.just_pressed()) _show_tile_debug = !_show_tile_debug;
+    //if (!actions::debug::modifier.down()) return;
+    if (actions::debug::tick.just_pressed())    _show_tick_debug = !_show_tick_debug;
+    if (actions::debug::actor.just_pressed())   _show_actor_debug = !_show_actor_debug;
+    if (actions::debug::tile.just_pressed())    _show_tile_debug = !_show_tile_debug;
     if (actions::debug::network.just_pressed()) _show_network_debug = !_show_network_debug;
-    //}
 }
 
 dyn_arr<draw_layer> DebugSystem::draw_layers() const { return { layers::tile::foreground + 1, layers::debug::ui_overlay }; }
@@ -31,7 +36,7 @@ void DebugSystem::draw(sf::RenderTarget& target, draw_layer layer) {
         }
     }
 
-    if (layer == layers::debug::ui_overlay && (_show_tile_debug || _show_network_debug)) {
+    if (layer == layers::debug::ui_overlay) {
         auto& font = AssetManager::get_font("monogram"_id);
         
         if (_show_tile_debug) {
@@ -62,15 +67,21 @@ void DebugSystem::draw(sf::RenderTarget& target, draw_layer layer) {
             target.draw(debug_text);
         }
 
+        
+        dyn_arr<str> debug_messages;
+        if (_show_tick_debug) debug_messages.push_back(fmt::format("Fixed Tick: {}", SystemManager::get_fixed_tick()));
+        if (_show_network_debug) debug_messages.append_range(NetworkManager::debug_message());
+        if (_show_actor_debug) debug_messages.append_range(ActorManager::debug_message());
+
         auto cam_opt = RenderManager::ui_camera();
-        if (_show_network_debug && cam_opt) {
+        if (cam_opt && !debug_messages.empty()) {
             Camera& cam = *cam_opt;
             auto cam_size = cam.as_view().getSize();
             auto top_left = -cam_size / 2.f + sf::fvec2(6.f, -2.f);
 
-            str debug_msg = NetworkManager::debug_message();
+            str message_str = fmt::format("{}", fmt::join(debug_messages, "\n"));
 
-            sf::Text debug_text(font, debug_msg, 16);
+            sf::Text debug_text(font, message_str, 16);
             debug_text.setOutlineThickness(2);
             debug_text.setOutlineColor(sf::Color::Black);
             debug_text.setPosition(top_left);

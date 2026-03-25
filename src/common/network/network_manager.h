@@ -46,7 +46,7 @@ public:
     static opt_cref<SocketAddress> server_address();
     static void set_server_address(const SocketAddress&);
     
-    static str debug_message();
+    static dyn_arr<str> debug_message();
 private:
     static constexpr Port SERVER_PORT = 5300;
     void connect_listener(Port port = SERVER_PORT);

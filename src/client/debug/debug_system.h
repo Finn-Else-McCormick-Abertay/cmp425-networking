@@ -12,6 +12,8 @@ public:
     virtual void draw(sf::RenderTarget&, draw_layer layer) override;
 
 private:
+    bool _show_tick_debug = true;
+    bool _show_actor_debug = true;
+    bool _show_network_debug = false;
     bool _show_tile_debug = false;
-    bool _show_network_debug = true;
 };

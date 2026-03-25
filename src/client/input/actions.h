@@ -40,6 +40,8 @@ namespace actions {
     namespace debug {
         INPUT_ACTION(modifier, bool);
         INPUT_ACTION(tile, bool);
+        INPUT_ACTION(tick, bool);
+        INPUT_ACTION(actor, bool);
         INPUT_ACTION(network, bool);
     }
 }
