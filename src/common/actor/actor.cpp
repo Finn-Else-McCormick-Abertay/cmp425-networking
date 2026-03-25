@@ -4,11 +4,11 @@
 
 IActor::IActor(const id& id, const frect2& rect, actor::PhysicsMode mode) : _type_id(id), _physics_mode(mode), _rect(rect) { ActorManager::Registry::__register(*this); }
 
-IActor::IActor(const IActor& rhs) : _type_id(rhs._type_id), _physics_mode(rhs._physics_mode), _rect(rhs._rect),
+IActor::IActor(const IActor& rhs) : _type_id(rhs._type_id), _physics_mode(rhs._physics_mode), _rect(rhs._rect), _debug_color(rhs._debug_color),
                                     _grounded(rhs._grounded), _position(rhs._position), _velocity(rhs._velocity), _acceleration(rhs._acceleration) {
     ActorManager::Registry::__register(*this);
 }
-IActor::IActor(IActor&& rhs) : _type_id(move(rhs._type_id)), _physics_mode(rhs._physics_mode), _rect(move(rhs._rect)),
+IActor::IActor(IActor&& rhs) : _type_id(move(rhs._type_id)), _physics_mode(rhs._physics_mode), _rect(move(rhs._rect)), _debug_color(rhs._debug_color),
                                 _grounded(rhs._grounded), _position(move(rhs._position)), _velocity(move(rhs._velocity)), _acceleration(move(rhs._acceleration)) {
     ActorManager::Registry::__register(*this);
 }
@@ -19,6 +19,9 @@ const id& IActor::type_id() const                          { return _type_id; }
 
 actor::PhysicsMode IActor::physics_mode() const            { return _physics_mode; }
 void IActor::set_physics_mode(actor::PhysicsMode mode)     { _physics_mode = mode; }
+
+uint32 IActor::debug_color() const                         { return _debug_color; }
+void IActor::set_debug_color(fmt::detail::color_type color){ _debug_color = color.value(); }
 
 const fvec2&  IActor::position() const                     { return _position; }
 fvec2&        IActor::position()                           { return _position; }
@@ -44,9 +47,22 @@ void          IActor::set_grounded(bool grounded)          { _grounded = grounde
 #ifdef CLIENT
 dyn_arr<draw_layer> IActor::draw_layers() const { return { layers::actor }; }
 void IActor::draw(sf::RenderTarget& target, draw_layer layer) {
-    auto draw_rect = sf::RectangleShape(to_sfvec(rect().size));
-    draw_rect.setPosition(to_sfvec(global_rect().origin));
-    draw_rect.setFillColor(sf::Color::Yellow);
+    float outline_thickness = 0.f;
+
+    fvec2 size = rect().size - fvec2(outline_thickness * 2, outline_thickness * 2);
+    fvec2 pos = global_rect().origin + fvec2(outline_thickness, outline_thickness);
+    
+    auto rgb = fmt::rgb(debug_color());
+    auto debug_color = sf::Color(rgb.r, rgb.g, rgb.b);
+    //sf::Color body_color = (debug_color * sf::Color(230, 230, 230)) + sf::Color(50, 50, 50);
+    //sf::Color outline_color = debug_color;
+
+    auto draw_rect = sf::RectangleShape(to_sfvec(size));
+    draw_rect.setPosition(to_sfvec(pos));
+    draw_rect.setFillColor(debug_color);
+    //draw_rect.setFillColor(body_color);
+    //draw_rect.setOutlineColor(outline_color);
+    //draw_rect.setOutlineThickness(outline_thickness);
     target.draw(draw_rect);
 }
 #endif

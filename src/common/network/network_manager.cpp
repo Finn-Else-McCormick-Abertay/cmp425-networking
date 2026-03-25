@@ -249,7 +249,6 @@ void NetworkManager::handle_incoming_packet(const SocketAddress& address, Logica
 
 void NetworkManager::handle_incoming(const SocketAddress& address, TcpSocket& socket) {
     //print<debug, NetworkManager>("HANDLE INCOMING from {}", address);
-    //if (max_iterations <= 0) return;
 
     sf::Packet packet; auto status = socket.receive(packet);
     if (status == Socket::Status::Done) {
@@ -266,11 +265,6 @@ void NetworkManager::handle_incoming(const SocketAddress& address, TcpSocket& so
     }
     else if (status != Socket::Status::NotReady)
         print<error, NetworkManager>("Failed to recieve packet from {} : {}", address, status);
-    
-    /*if (status == Socket::Status::Done && max_iterations > 1 && _selector.isReady(socket)) {
-        print<debug, NetworkManager>("MULTI_RECIEVE {} {}", address, max_iterations);
-        handle_incoming(address, socket, max_iterations - 1);
-    }*/
 }
 
 void NetworkManager::handle_outgoing(INetworked& networked) {

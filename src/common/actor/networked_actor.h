@@ -4,9 +4,7 @@
 #include <network/networked.h>
 #include <util/helper/enum_serialization.h>
 
-namespace actor {
-    enum class NetworkMode { AUTHORITY, LISTENER, RELAY };
-}
+namespace actor { enum class NetworkMode { AUTHORITY, LISTENER, RELAY }; }
 ENUM_FORMATTER(actor::NetworkMode, (AUTHORITY, LISTENER, RELAY));
 
 class INetworkedActor : public IActor, protected INetworked {

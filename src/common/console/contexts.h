@@ -1,4 +1,5 @@
 #pragma once
+#include <fmt/color.h>
 
 struct info {
     static constexpr auto TEXT_COLOUR = fmt::color::white;

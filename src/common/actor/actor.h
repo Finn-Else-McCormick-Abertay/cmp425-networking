@@ -5,14 +5,11 @@
 #include <maths/rect.h>
 #include <data/namespaced_id.h>
 #include <render/drawable.h>
+#include <util/helper/enum_serialization.h>
+#include <fmt/color.h>
 
-namespace actor {
-    enum class PhysicsMode {
-        NONE,
-        DYNAMIC,
-        STATIC
-    };
-}
+namespace actor { enum class PhysicsMode { DYNAMIC, STATIC }; }
+ENUM_FORMATTER(actor::PhysicsMode, (DYNAMIC, STATIC));
 
 class IActor : IDrawable {
 public:
@@ -27,8 +24,12 @@ public:
     frect2 global_rect() const;
 
     bool grounded() const;              void set_grounded(bool);
+
+    uint32 debug_color() const;         void set_debug_color(fmt::detail::color_type);
 private:
-    id _type_id; actor::PhysicsMode _physics_mode;
+    id _type_id; uint32 _debug_color;
+
+    actor::PhysicsMode _physics_mode;
     frect2 _rect;
     fvec2 _position{0}, _velocity{0}, _acceleration{0};
     bool _grounded = false;
