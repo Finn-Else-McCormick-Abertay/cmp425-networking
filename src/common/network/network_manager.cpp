@@ -151,7 +151,6 @@ opt_cref<NetworkManager::Client> NetworkManager::get_client_by_uid(const str& ui
     return nullopt;
 }
 
-
 NetworkManager::Client& NetworkManager::set_remote_client(const SocketAddress& address, Client&& client) {
     clear_remote_client(address);
     client._uid = client._username;

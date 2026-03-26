@@ -19,11 +19,22 @@ DEFINE_SINGLETON(ActorManager);
 
 ActorManager::ActorManager() : INetworked("singleton#actor_manager"_netid) {}
 
-void ActorManager::Registry::__register(IActor& actor)   { inst()._known_actors.insert(&actor); }
+void ActorManager::Registry::__register(IActor& actor)   { inst()._known_actors.try_emplace(&actor, nullptr); }
 void ActorManager::Registry::__unregister(IActor& actor) { inst()._known_actors.erase(&actor); }
 
-void ActorManager::Registry::__register(INetworkedActor& actor)   { inst()._known_networked_actors.insert(&actor); }
-void ActorManager::Registry::__unregister(INetworkedActor& actor) { inst()._known_networked_actors.erase(&actor); }
+void ActorManager::Registry::__register(INetworkedActor& net_actor)   {
+    IActor* root_actor = dynamic_cast<IActor*>(&net_actor);
+    if (root_actor == nullptr) return print<error, ActorManager>("(register) NetworkedActor {} failed to downcast to Actor.", net_actor.netid());
+
+    if (!inst()._known_actors.contains(root_actor)) __register(*root_actor);
+    inst()._known_actors[root_actor] = &net_actor;
+}
+void ActorManager::Registry::__unregister(INetworkedActor& net_actor) {
+    IActor* root_actor = dynamic_cast<IActor*>(&net_actor);
+    if (root_actor == nullptr) return print<error, ActorManager>("(unregister) NetworkedActor {} failed to downcast to Actor.", net_actor.netid());
+
+    if (inst()._known_actors.contains(root_actor)) inst()._known_actors[root_actor] = nullptr;
+}
 
 void ActorManager::init() {
     // This is necessary cause of the weird pattern I've locked myself into where static initialisation order is something I have to consider
@@ -148,7 +159,7 @@ void ActorManager::handle_collisions(IActor& actor, bool apply_friction) {
 
 void ActorManager::fixed_tick() {
     // Progress physics
-    for (auto actor : inst()._known_actors) perform_physics_step(*actor);
+    for (auto [actor, _] : inst()._known_actors) perform_physics_step(*actor);
 
     #ifdef CLIENT
     // Handle player camera
@@ -165,7 +176,6 @@ void ActorManager::fixed_tick() {
     #endif
 }
 
-// Something's wrong here. I don't think try emplace works the way I think it does. Hacking around it elsewhere
 PlayerActor& ActorManager::register_player(const str& ident, const str& display_name, bool broadcast, bool fail_quiet) {
     auto [it, is_new] = inst()._players.try_emplace(ident, PlayerActor(ident, display_name));
     update_player_authority_states();
@@ -245,8 +255,8 @@ dyn_arr<str> ActorManager::debug_message() {
     dyn_arr<str> messages {
         fmt::format("Interpolation: {}", interpolation_mode()),
     };
-    for (auto& actor : inst()._known_networked_actors) {
-        str actor_info = fmt::format("{:<15} {:>15}", actor->netid(), fmt::format("({})", actor->network_mode()));
+    for (auto& [actor, net_actor] : inst()._known_actors) {
+        str actor_info = net_actor ? fmt::format("{:<15} {:>15}", net_actor->netid(), fmt::format("({})", net_actor->network_mode())) : actor->type_id().to_str();
         str motion_info = fmt::format("Pos {:n: > 8.0f} | Vel {:n: > 8.0f} | Accel {:n: > 8.0f}", actor->position(), actor->velocity(), actor->acceleration());
         messages.push_back(fmt::format("{} : {}", actor_info, motion_info));
     }

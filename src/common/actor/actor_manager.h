@@ -23,9 +23,6 @@ public:
     static actor::InterpolationMode interpolation_mode(bool validate = true);
     static void set_interpolation_mode(actor::InterpolationMode);
 
-    static constexpr actor::InterpolationMode CLIENT_DEFAULT_INTERPOLATION = actor::InterpolationMode::NONE_MOTION;
-    static constexpr actor::InterpolationMode SERVER_DEFAULT_INTERPOLATION = actor::InterpolationMode::NONE;
-
     static PlayerActor& register_player(const str& ident, const str& display_name, bool broadcast = true, bool fail_quiet = false);
     static void unregister_player(const str& ident, bool broadcast = true, bool fail_quiet = false);
     static opt_ref<PlayerActor> get_player_actor(const str& ident);
@@ -40,12 +37,13 @@ public:
     /// Messages to be displayed in the debug hud
     static dyn_arr<str> debug_message();
 private:
-    set<IActor*> _known_actors;
-    set<INetworkedActor*> _known_networked_actors;
+    static constexpr actor::InterpolationMode CLIENT_DEFAULT_INTERPOLATION = actor::InterpolationMode::LINEAR_MOTION;
+    static constexpr actor::InterpolationMode SERVER_DEFAULT_INTERPOLATION = actor::InterpolationMode::NONE;
+    
+    hashmap<str, PlayerActor> _players;
 
     actor::InterpolationMode _interpolation_mode;
-
-    hashmap<str, PlayerActor> _players;
+    bstmap<IActor*, INetworkedActor*> _known_actors;
     
     virtual result<LogicalPacket, str> get_requested_message(const packet_id& id) const override;
     virtual result<success_t, str> read_message(LogicalPacket&&) override;

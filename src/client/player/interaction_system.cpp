@@ -46,7 +46,7 @@ void player::InteractionSystem::tick(float dt) {
         move_vec *= move_speed;
 
         float gravity = 32.f * (float)TILE_SIZE; // Assuming 1 tile = 1 foot
-        if (actions::jump.down()) gravity *= 0.5;
+        if (actions::jump.down()) gravity *= 0.6;
         fvec2 gravity_vec = fvec2(0, gravity);
 
         player.set_acceleration(move_vec + gravity_vec);
