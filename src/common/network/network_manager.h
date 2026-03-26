@@ -11,13 +11,12 @@
 
 #include <SFML/Network.hpp>
 
-class NetworkManager { DECL_SINGLETON(NetworkManager);
+class NetworkManager { DECL_SINGLETON_WITH_CONSTRUCTOR(NetworkManager);
 public:
     DECL_REGISTRY(INetworked);
     ~NetworkManager();
 
     static void init();
-    
     static void perform_network_tick();
     
     /** Request packet from given network id at given address.
@@ -37,15 +36,28 @@ public:
     /** Send packet to given address. If no address is provided, packet will be sent to all active sockets. */
     static void broadcast(LogicalPacket&&, const opt<SocketAddress>& = nullopt);
 
-    static opt<str> user_uid();
-    static const str& username();
-    static void set_username(const str&);
+    class Client {
+    public:
+        Client(str username = "", bool has_player = true); Client(Client&&) = default;
 
-    static opt_cref<str> get_uid(const SocketAddress&);
+        const str& username() const; void set_username(const str&);
+        const opt<str>& uid() const;
+
+        bool has_player() const; void set_has_player(bool);
+
+    private:
+        bool _has_player = true;
+        str _username; opt<str> _uid; bool _awaiting_uid_validation;
+        friend class NetworkManager;
+    };
+    static opt<Client>& local_client();
+    static opt_cref<Client> get_remote_client(const SocketAddress&);
+    static opt_cref<Client> get_client_by_uid(const str& uid);
     
-    static opt_cref<SocketAddress> server_address();
-    static void set_server_address(const SocketAddress&);
+    static opt_cref<SocketAddress> remote_server_address();
+    static void set_remote_server_address(const SocketAddress&);
     
+    /// Messages to be displayed in the debug hud
     static dyn_arr<str> debug_message();
 private:
     static constexpr Port SERVER_PORT = 5300;
@@ -67,19 +79,20 @@ private:
 
     result<success_t, str> handle_lifecycle(const SocketAddress&, LogicalPacket&&);
     
-    set<INetworked*> _networked; hashmap<network_id, INetworked*> _networked_by_id;
+    set<INetworked*> _networked;
+    hashmap<network_id, INetworked*> _networked_by_id;
     
-    str _username;
-    opt<str> _user_uid; bool _awaiting_user_uid;
+    opt<SocketAddress> _remote_server_address;
+    opt<Client> _local_client;
 
-    //sf::SocketSelector _selector;
-    bstmap<SocketAddress, TcpSocket> _sockets; bstmap<SocketAddress, str> _socket_uids;
-    opt<TcpListener> _client_listener; opt<SocketAddress> _server_address;
+    opt<TcpListener> _remote_client_listener;
+
+    bstmap<SocketAddress, TcpSocket> _sockets; bstmap<SocketAddress, Client> _socket_clients;
+
+    Client& set_remote_client(const SocketAddress&, Client&&);
+    void clear_remote_client(const SocketAddress&);
 
     bstmap<SocketAddress, dyn_arr<LogicalPacket>> _accumulated_packets;
     void send(const LogicalPacket&, const opt<SocketAddress>&);
     void send(LogicalPacket&&, const opt<SocketAddress>&);
-
-    opt_cref<str> try_set_uid(const SocketAddress&, const str& requested = "", bool try_fallback = true);
-    void clear_uid(const SocketAddress&);
 };

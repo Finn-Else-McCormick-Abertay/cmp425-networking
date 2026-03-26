@@ -25,9 +25,9 @@ opt_ref<Level> WorldManager::level(const id& level_id) {
 
 void WorldManager::init() {
     #ifdef CLIENT
-    if (!inst()._world && NetworkManager::server_address()) {
+    if (!inst()._world && NetworkManager::remote_server_address()) {
         // Request world information from server
-        NetworkManager::request(inst().netid(), packet_id("world", { "joined" }), *NetworkManager::server_address());
+        NetworkManager::request(inst().netid(), packet_id("world", { "joined" }), *NetworkManager::remote_server_address());
     }
     #elifdef SERVER
     // If a world name was not provided by the cli (runs before the init methods)

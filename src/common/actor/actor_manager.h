@@ -26,7 +26,7 @@ public:
     static constexpr actor::InterpolationMode CLIENT_DEFAULT_INTERPOLATION = actor::InterpolationMode::NONE_MOTION;
     static constexpr actor::InterpolationMode SERVER_DEFAULT_INTERPOLATION = actor::InterpolationMode::NONE;
 
-    static PlayerActor& register_player(const str& ident, bool broadcast = true, bool fail_quiet = false);
+    static PlayerActor& register_player(const str& ident, const str& display_name, bool broadcast = true, bool fail_quiet = false);
     static void unregister_player(const str& ident, bool broadcast = true, bool fail_quiet = false);
     static opt_ref<PlayerActor> get_player_actor(const str& ident);
 
@@ -37,8 +37,8 @@ public:
     static void perform_physics_step(IActor& actor);
     static void handle_collisions(IActor& actor, bool apply_friction = true);
 
+    /// Messages to be displayed in the debug hud
     static dyn_arr<str> debug_message();
-
 private:
     set<IActor*> _known_actors;
     set<INetworkedActor*> _known_networked_actors;

@@ -31,9 +31,11 @@ void player::InteractionSystem::tick(float dt) {
             chunk[tile_layer::Foreground].set_tile_at(local_tile_pos, "air"_id);
         }
     }
-    
-    auto player_opt = NetworkManager::user_uid().and_then(ActorManager::get_player_actor);
-    if (player_opt) {
+
+    if (auto player_opt = NetworkManager::local_client()
+        .and_then([](auto& client) { return client.has_player() ? client.uid() : nullopt; })
+        .and_then(ActorManager::get_player_actor); player_opt
+    ) {
         PlayerActor& player = *player_opt;
 
         float move_speed = 100.f;

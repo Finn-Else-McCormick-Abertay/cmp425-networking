@@ -166,10 +166,10 @@ void ActorManager::fixed_tick() {
 }
 
 // Something's wrong here. I don't think try emplace works the way I think it does. Hacking around it elsewhere
-PlayerActor& ActorManager::register_player(const str& ident, bool broadcast, bool fail_quiet) {
-    auto [it, is_new] = inst()._players.try_emplace(ident, PlayerActor(ident));
+PlayerActor& ActorManager::register_player(const str& ident, const str& display_name, bool broadcast, bool fail_quiet) {
+    auto [it, is_new] = inst()._players.try_emplace(ident, PlayerActor(ident, display_name));
     update_player_authority_states();
-    if (is_new && broadcast) NetworkManager::broadcast(LogicalPacket(inst().netid(), packet_id("player", { "connected", ident })));
+    if (is_new && broadcast) NetworkManager::broadcast(inst().netid(), packet_id("player", { "connected", ident }));
 
     if (is_new) print<info, ActorManager>("Registered player '{}'.", ident);
     else if (!fail_quiet) print<warning, ActorManager>("register_player called for previously registered player '{}'.", ident);
@@ -184,12 +184,12 @@ void ActorManager::unregister_player(const str& ident, bool broadcast, bool fail
 }
 
 void ActorManager::update_player_authority_states() {
-    auto user_uid = NetworkManager::user_uid();
+    str user_uid = NetworkManager::local_client().and_then([](auto& client) { return client.uid(); }).value_or("");
     for (auto& [ident, player] : inst()._players) {
         #ifdef SERVER
         player.set_network_mode(actor::NetworkMode::RELAY);
         #elifdef CLIENT
-        player.set_network_mode(user_uid && (*user_uid == ident) ? actor::NetworkMode::AUTHORITY : actor::NetworkMode::LISTENER);
+        player.set_network_mode(user_uid == ident ? actor::NetworkMode::AUTHORITY : actor::NetworkMode::LISTENER);
         #endif
     }
 }
@@ -205,7 +205,16 @@ result<LogicalPacket, str> ActorManager::get_requested_message(const packet_id& 
         if (!event_arg) return err("Missing event arg."); else if (!ident_arg) return err("Missing player ident arg.");
         auto& event = *event_arg; auto& ident = *ident_arg;
         
-        if (event == "connected" || event == "existing") return LogicalPacket(netid(), id);
+        if (event == "connected" || event == "existing") {
+            auto packet = LogicalPacket(netid(), id);
+
+            str player_name = ident;
+            if (auto player_actor_opt = ActorManager::get_player_actor(ident); player_actor_opt)
+                player_name = player_actor_opt.value().get().display_name();
+
+            packet.contents << player_name;
+            return packet;
+        }
         else if (event == "disconnected") return LogicalPacket(netid(), id);
         else return err("Invalid event arg. Must be one of 'connected', 'disconnected' or 'existing'.");
     }
@@ -213,18 +222,17 @@ result<LogicalPacket, str> ActorManager::get_requested_message(const packet_id& 
 }
 
 result<success_t, str> ActorManager::read_message(LogicalPacket&& packet) {
-    print<debug, ActorManager>("RECIEVED {} ({})", packet.id, NetworkManager::user_uid());
     if (packet.id.type() == "player") {
         auto event_arg = packet.id.get_arg(0); auto ident_arg = packet.id.get_arg(1);
         if (!event_arg) return err("Missing event arg."); else if (!ident_arg) return err("Missing player ident arg.");
         auto& event = *event_arg; auto& ident = *ident_arg;
         
         if (event == "connected" || event == "existing") {
-            if (!inst()._players.contains(ident)) register_player(ident, false, event == "existing");
+            str display_name; packet.contents >> display_name;
+            if (!inst()._players.contains(ident)) register_player(ident, display_name, event == "existing");
             return empty_success;
         }
         else if (event == "disconnected") {
-            print<debug, ActorManager>("PLAYER UNLOAD REQUEST : {}", ident);
             unregister_player(ident, false);
             return empty_success;
         }

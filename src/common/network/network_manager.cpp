@@ -10,6 +10,12 @@
 
 DEFINE_SINGLETON(NetworkManager);
 
+NetworkManager::NetworkManager() {
+    #ifdef CLIENT
+    _local_client.emplace(Client("guest"));
+    #endif
+}
+
 NetworkManager::~NetworkManager() {
     disconnect_all();
 }
@@ -31,56 +37,57 @@ void NetworkManager::Registry::__unregister(INetworked& networked) {
 
 void NetworkManager::init() {
     #ifdef CLIENT
-    if (!server_address()) set_server_address(IpAddress::LocalHost);
-    print<network_info>("Connecting to server {}...", *server_address());
-    inst().connect(*server_address());
+    if (!remote_server_address()) set_remote_server_address(IpAddress::LocalHost);
+    print<network_info>("Connecting to server {}...", *remote_server_address());
+    inst().connect(*remote_server_address());
     #elifdef SERVER
     inst().connect_listener(SERVER_PORT);
     #endif
 }
 
-const str& NetworkManager::username() { return inst()._username; }
-void NetworkManager::set_username(const str& username) {
-    inst()._username = username;
-    print<info, NetworkManager>("Set username to {}.", username);
-    // If connected to server
-    if (inst()._server_address && inst()._sockets.contains(*inst()._server_address))
+NetworkManager::Client::Client(str username, bool has_player) : _username(username), _uid(nullopt), _has_player(has_player) {}
+
+const str& NetworkManager::Client::username() const { return _username; }
+const opt<str>& NetworkManager::Client::uid() const { return _uid; }
+
+void NetworkManager::Client::set_username(const str& username) {
+    _username = username;
+    if (inst()._remote_server_address && inst()._sockets.contains(*inst()._remote_server_address))
         print<error, NetworkManager>("!UNHANDLED! Username changed while server connected.");
 }
 
-opt<str> NetworkManager::user_uid() {
-    if (inst()._user_uid) return *inst()._user_uid;
+bool NetworkManager::Client::has_player() const { return _has_player; }
+void NetworkManager::Client::set_has_player(bool val) {
+    _has_player = val;
+    if (inst()._remote_server_address && inst()._sockets.contains(*inst()._remote_server_address))
+        print<error, NetworkManager>("!UNHANDLED! Client player mode changed while server connected.");
+}
+
+opt<NetworkManager::Client>& NetworkManager::local_client() { return inst()._local_client; }
+
+opt_cref<SocketAddress> NetworkManager::remote_server_address() {
+    if (inst()._remote_server_address) return *inst()._remote_server_address;
     return nullopt;
 }
 
-opt_cref<str> NetworkManager::get_uid(const SocketAddress& address) {
-    if (inst()._socket_uids.contains(address)) return inst()._socket_uids[address];
-    return nullopt;
-}
-
-opt_cref<SocketAddress> NetworkManager::server_address() {
-    if (inst()._server_address) return *inst()._server_address;
-    return nullopt;
-}
-
-void NetworkManager::set_server_address(const SocketAddress& address) {
-    inst()._server_address = address;
-    if (inst()._server_address->port == Socket::AnyPort) inst()._server_address->port = SERVER_PORT;
+void NetworkManager::set_remote_server_address(const SocketAddress& address) {
+    inst()._remote_server_address = address;
+    if (inst()._remote_server_address->port == Socket::AnyPort) inst()._remote_server_address->port = SERVER_PORT;
 }
 
 void NetworkManager::connect_listener(Port port) {
     disconnect_listener();
-    _client_listener = make_opt<TcpListener>();
-    _client_listener->setBlocking(false);
-    if (_client_listener->listen(port) != Socket::Status::Done)
+    _remote_client_listener = make_opt<TcpListener>();
+    _remote_client_listener->setBlocking(false);
+    if (_remote_client_listener->listen(port) != Socket::Status::Done)
         return print<error, NetworkManager>("Failed to begin listening on port {}.", port);
     print<success, NetworkManager>("Listening on port {}.", port);
 }
 void NetworkManager::disconnect_listener() {
-    if (_client_listener) {
-        print<success, NetworkManager>("Stopped listening on port {}.", _client_listener->getLocalPort());
-        _client_listener->close();
-        _client_listener = nullopt;
+    if (_remote_client_listener) {
+        print<success, NetworkManager>("Stopped listening on port {}.", _remote_client_listener->getLocalPort());
+        _remote_client_listener->close();
+        _remote_client_listener = nullopt;
     }
 }
 
@@ -115,58 +122,63 @@ void NetworkManager::disconnect_all() {
 }
 
 void NetworkManager::seek_server_connection() {
-    if (!_server_address) return;
-    if (!_sockets.contains(*_server_address)) connect(*_server_address, 100ms, true);
+    if (!_remote_server_address) return;
+    if (!_sockets.contains(*_remote_server_address)) connect(*_remote_server_address, 100ms, true);
 
-    if (_sockets.contains(*_server_address) && !_user_uid && !_awaiting_user_uid) {
-        sf::Packet packet; packet << _username;
-        broadcast(LogicalPacket("lifecycle#request"_netid, "uid"_packid, move(packet), nullopt, LogicalPacket::MessageType::Lifecycle), *_server_address);
-        _awaiting_user_uid = true;
+    if (!local_client()) return print<warning, NetworkManager>("seek_server_connection() called while no local client exists");
+    if (_sockets.contains(*_remote_server_address) && !local_client()->_uid && !local_client()->_awaiting_uid_validation) {
+        sf::Packet packet; packet << local_client()->username() << local_client()->has_player();
+        broadcast(LogicalPacket("lifecycle#request"_netid, "uid"_packid, move(packet), nullopt, LogicalPacket::MessageType::Lifecycle), *_remote_server_address);
+        local_client()->_awaiting_uid_validation = true;
     }
 }
 
 void NetworkManager::seek_client_connection() {
-    if (!_client_listener) return;
+    if (!_remote_client_listener) return;
     TcpSocket new_socket;
-    auto status = _client_listener.value().accept(new_socket);
+    auto status = _remote_client_listener.value().accept(new_socket);
     if (status == Socket::Status::Done) register_socket(move(new_socket));
     else if (status == Socket::Status::Error) print<error, NetworkManager>("Failed to accept new connection.");
 }
 
-opt_cref<str> NetworkManager::try_set_uid(const SocketAddress& address, const str& requested, bool try_fallback) {
-    if (requested.empty()) {
-        if (try_fallback) return try_set_uid(address, fmt::format("guest[{}]", address), false);
-        return nullopt;
-    }
-    for (auto& [existing_addr, existing_uid] : _socket_uids) {
-        if (existing_uid == requested && existing_addr != address) {
-            print<warning, NetworkManager>("{} requested username '{}', which is already in use by {}.", address, requested, existing_addr);
-            if (try_fallback) return try_set_uid(address, fmt::format("{}[{}]", requested, address), false);
-            return nullopt;
-        }
-    }
-    clear_uid(address);
-    auto [it, _] = _socket_uids.emplace(address, requested);
-    const str& uid = it->second;
-    print<network_info, NetworkManager>("Registered {} with uid {}.", address, uid);
-
-    // As it stands this method should only ever run in server mode but yknow. Just in case.
-    #ifdef SERVER
-    // Create client's corresponding player
-    ActorManager::register_player(uid, true);
-    #endif
-
-    return cref(uid);
+opt_cref<NetworkManager::Client> NetworkManager::get_remote_client(const SocketAddress& address) {
+    if (inst()._socket_clients.contains(address)) return cref(inst()._socket_clients.at(address));
+    return nullopt;
+}
+opt_cref<NetworkManager::Client> NetworkManager::get_client_by_uid(const str& uid) {
+    if (local_client() && local_client()->uid() && local_client()->uid().value() == uid) return cref(local_client().value());
+    for (auto& [_, client] : inst()._socket_clients) { if (client.uid() && client.uid().value() == uid) return cref(client); }
+    return nullopt;
 }
 
-void NetworkManager::clear_uid(const SocketAddress& address) {
-    //print<debug, NetworkManager>("Attempted to clear uid for {}. ({})", address, _socket_uids.contains(address));
-    //for (auto [socket, uid] : _socket_uids) print<debug, NetworkManager>(" - {} : {}", socket, uid);
-    if (!_socket_uids.contains(address)) return;
+
+NetworkManager::Client& NetworkManager::set_remote_client(const SocketAddress& address, Client&& client) {
+    clear_remote_client(address);
+    client._uid = client._username;
+    if (client._username.empty()) { client._username = "guest"; client._uid = fmt::format("guest[{}]", address); }
+    for (auto& [existing_addr, existing_client] : _socket_clients) {
+        if (existing_addr != address && existing_client._uid.value() == client._uid.value()) {
+            print<warning, NetworkManager>("{} requested username '{}', which is already the uid of {}.", address, client._username, existing_addr);
+            client._uid = fmt::format("{}[{}]", client._username, address);
+        }
+    }
+
+    auto [it, _] = _socket_clients.emplace(address, move(client));
+    auto& in_place_client = it->second;
+    print<network_info, NetworkManager>("Registered {} with username {} and uid {}.", address, in_place_client.username(), in_place_client.uid().value_or("null"));
+
+    // Create client's corresponding player
+    if (in_place_client.has_player()) ActorManager::register_player(in_place_client.uid().value(), in_place_client.username(), true);
+
+    return in_place_client;
+}
+
+void NetworkManager::clear_remote_client(const SocketAddress& address) {
+    if (!_socket_clients.contains(address)) return;
     #ifdef SERVER
-    ActorManager::unregister_player(_socket_uids[address], true);
+    if (_socket_clients[address].has_player()) ActorManager::unregister_player(_socket_clients[address].uid().value(), true);
     #endif
-    _socket_uids.erase(address);
+    _socket_clients.erase(address);
 }
 
 result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& address, LogicalPacket&& packet) {
@@ -180,12 +192,15 @@ result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& add
             auto response_packet = LogicalPacket("lifecycle#answer"_netid, "uid"_packid);
             response_packet.type = LogicalPacket::MessageType::Lifecycle;
 
-            str requested_username; packet.contents >> requested_username;
-            if (auto result = try_set_uid(address, requested_username)) {
+            str username; packet.contents >> username;
+            bool player_state; packet.contents >> player_state;
+            auto& client = set_remote_client(address, Client(username, player_state));
+
+            if (client.uid()) {
                 response_packet.id = "uid!success"_packid;
-                response_packet.contents << *result;
+                response_packet.contents << client.uid().value();
             }
-            else  {
+            else {
                 print<error, NetworkManager>("Failed to set uid for {}.", address);
                 response_packet.id = "uid!failure;taken"_packid;
             }
@@ -193,13 +208,13 @@ result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& add
             send(response_packet, address);
 
             // Update them on the already connected players
-            for (auto& [_, uid] : inst()._socket_uids)
-                broadcast(network_id("singleton"_id, "actor_manager"), packet_id("player", { "existing", uid }), address);
+            for (auto& [_, client] : inst()._socket_clients) {
+                if (client.has_player()) broadcast("singleton#actor_manager"_netid, packet_id("player", { "existing", client.uid().value() }), address);
+            }
 
             return empty_success;
         }
         else {
-            _awaiting_user_uid = false;
             // If operation failed
             if (auto success_arg = packet.id.get_arg(0); success_arg
                 && *success_arg != "success"
@@ -208,9 +223,10 @@ result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& add
                 return err(*success_arg);
             }
             str validated_uid; packet.contents >> validated_uid;
-            _user_uid = validated_uid;
+            local_client()->_uid = validated_uid;
+            local_client()->_awaiting_uid_validation = false;
             ActorManager::update_player_authority_states();
-            print<network_info, NetworkManager>("Registered with server as {}.", *_user_uid);
+            print<network_info, NetworkManager>("Registered with server as {}.", local_client()->uid().value_or("null"));
             return empty_success;
         }
     }
@@ -256,7 +272,7 @@ void NetworkManager::handle_incoming(const SocketAddress& address, TcpSocket& so
     }
     else if (status == Socket::Status::Disconnected) {
         print<network_info>("Lost connection with {}.", address);
-        clear_uid(address);
+        clear_remote_client(address);
         disconnect(address);
     }
     else if (status != Socket::Status::NotReady)
@@ -387,8 +403,8 @@ void NetworkManager::send(LogicalPacket&& packet, const opt<SocketAddress>& addr
 
 dyn_arr<str> NetworkManager::debug_message() {
     return {
-        fmt::format("Username: {} | UID: {}", inst()._username, inst().user_uid().value_or("null")),
-        fmt::format("Server: {}", inst()._server_address.transform([](auto& value) { return fmt::format("{}", value); }).value_or("null")),
+        fmt::format("Username: {} | UID: {}", inst().local_client().transform([](auto& x) { return x.username(); }).value_or("null"), inst().local_client().and_then([](auto& x) { return x.uid(); }).value_or("null")),
+        fmt::format("Server: {}", inst()._remote_server_address.transform([](auto& value) { return fmt::format("{}", value); }).value_or("null")),
         fmt::format("Networked Object Ids: {}", fmt::join(views::keys(inst()._networked_by_id), ", ")),
     };
 }

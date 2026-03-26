@@ -14,14 +14,14 @@ lyra::cli cli::dirs() {
             [](str dir) {
                 DataManager::set_resources_folder(dir);
             }, "resource_dir")
-            ["--resource_dir"]
+            ["--resource_dir"]["--resource-dir"]
             ("Path to the resources folder.")
             .optional()
         | lyra::opt(
             [](str dir) {
                 SaveManager::set_user_folder(dir);
             }, "user_dir")
-            ["--user_dir"]
+            ["--user_dir"]["--user-dir"]
             ("Path to user data folder.")
             .optional();
 }
@@ -48,17 +48,22 @@ lyra::cli cli::client() {
     return lyra::cli()
         | lyra::opt(
             [](str ip){
-                if (auto opt = SocketAddress::resolve(ip)) NetworkManager::set_server_address(*opt);
+                if (auto opt = SocketAddress::resolve(ip)) NetworkManager::set_remote_server_address(*opt);
                 else print<warning>("{} is not a valid address.", ip);
             }, "server")
-            ["-s"]["--server"]["--connect"]
+            ["-s"]["--server"]["--connect"]["--remote"]
             ("Server address.")
             .optional()
         | lyra::opt([](str username) {
-                NetworkManager::set_username(username);
+                NetworkManager::local_client()->set_username(username);
             }, "username")
             ["-u"]["--user"]["--username"]
             ("Username to connect under.")
+            .optional()
+        | lyra::opt([](bool is_observer) {
+                NetworkManager::local_client()->set_has_player(!is_observer);
+            })
+            ["-o"]["--is-observer"]["--observer"]
             .optional();
 }
 
