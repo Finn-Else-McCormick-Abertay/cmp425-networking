@@ -65,7 +65,7 @@ void InputManager::setup_default_binds() {
 
     bind(Key::I, actions::debug::cycle_interpolation);
     bind(Key::O, actions::debug::default_interpolation);
-    bind(Key::P, actions::debug::disable_interpolation);
+    bind(Key::K, actions::debug::disable_interpolation);
 
     // Cursor
     bind(Mouse::Motion, actions::cursor);
@@ -82,7 +82,9 @@ void InputManager::setup_default_binds() {
 
     // Player movement
     bind(ScanCode::Space, actions::jump);
+    bind(Controller::Button::XBOX_A, actions::jump);
     bind(ScanCode::LControl, actions::run);
+    bind(Controller::Button::XBOX_X, actions::select);
     
     bind(ScanCode::A, internal_actions::_left_move);
     bind(ScanCode::D, internal_actions::_right_move);
