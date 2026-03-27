@@ -31,3 +31,13 @@ template <> struct fmt::formatter<EnumName>: formatter<str> { \
 #define DECL_ENUM_FORMATTED(Signature, EnumName, Values, ...) \
     Signature EnumName { DEPAREN(Values) }; \
     ENUM_FORMATTER(EnumName, Values __VA_OPT__(,) __VA_ARGS__)
+
+#define DECL_NAMESPACED_ENUM_FORMATTED(Namespace, Signature, EnumName, Values, ...) \
+    namespace Namespace { Signature EnumName { DEPAREN(Values) }; } \
+    ENUM_FORMATTER(Namespace::EnumName, Values __VA_OPT__(,) __VA_ARGS__)
+
+    
+// A 'complex enum' is a class wrapping an enum so it can be used like one but can also have methods etc
+#define FORMAT_COMPLEX_ENUM_AS_VALUE(EnumName) \
+    inline auto format_as(EnumName complex_enum) { return (EnumName::Value)complex_enum; } \
+    static_assert(true)

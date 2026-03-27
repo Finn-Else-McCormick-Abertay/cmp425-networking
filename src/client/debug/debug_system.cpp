@@ -17,18 +17,17 @@ void DebugSystem::tick(float dt) {
     if (actions::debug::tile.just_pressed())    _show_tile_debug    = !_show_tile_debug;
     if (actions::debug::network.just_pressed()) _show_network_debug = !_show_network_debug;
 
-    if (actions::debug::default_interpolation.just_pressed()) ActorManager::set_interpolation_mode(actor::InterpolationMode::DEFAULT);    
-    if (actions::debug::disable_interpolation.just_pressed()) ActorManager::set_interpolation_mode(actor::InterpolationMode::NONE);
+    if (actions::debug::default_interpolation.just_pressed()) ActorManager::set_interpolation(Interpolation::DEFAULT);    
+    if (actions::debug::disable_interpolation.just_pressed()) ActorManager::set_interpolation(Interpolation::NONE);
     if (actions::debug::cycle_interpolation.just_pressed()) {
         int cycle_direction = actions::debug::modifier_invert.down() ? -1 : 1;
-        auto next_interpolation_mode = (actor::InterpolationMode)(std::to_underlying(ActorManager::interpolation_mode()) + cycle_direction);
+        ActorManager::set_interpolation(ActorManager::interpolation() + cycle_direction);
+        /*auto next_interpolation_mode = (actor::InterpolationMode)(std::to_underlying(ActorManager::interpolation_mode()) + cycle_direction);
 
         if (next_interpolation_mode == actor::InterpolationMode::__COUNT__)
             next_interpolation_mode = (actor::InterpolationMode)(std::to_underlying(actor::InterpolationMode::DEFAULT) + 1);
         else if (next_interpolation_mode == actor::InterpolationMode::DEFAULT)
-            next_interpolation_mode = (actor::InterpolationMode)(std::to_underlying(actor::InterpolationMode::__COUNT__) - 1);
-            
-        ActorManager::set_interpolation_mode(next_interpolation_mode);
+            next_interpolation_mode = (actor::InterpolationMode)(std::to_underlying(actor::InterpolationMode::__COUNT__) - 1);*/
     }
 }
 

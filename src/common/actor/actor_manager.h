@@ -8,42 +8,53 @@
 #include <actor/networked_actor.h>
 #include <actor/player_actor.h>
 #include <system/system.h>
-#include <util/helper/glaze_enum_helper.h>
-
-// __COUNT__ is used for looping over / cycling through values
-namespace actor { enum class InterpolationMode { DEFAULT, NONE, NONE_MOTION, LINEAR_POSITION, LINEAR_MOTION, __COUNT__ }; }
-ENUM_GLAZE_AND_FORMATTER(actor::InterpolationMode, (DEFAULT, NONE, NONE_MOTION, LINEAR_POSITION, LINEAR_MOTION));
+#include <actor/interpolation.h>
 
 class ActorManager : INetworked, IFixedTickingSystem { DECL_SINGLETON_WITH_CONSTRUCTOR(ActorManager);
 public:
     DECL_MULTI_REGISTRY(IActor, INetworkedActor);
 
+    /** Initialise manager. */
     static void init();
     
-    static actor::InterpolationMode interpolation_mode(bool validate = true);
-    static void set_interpolation_mode(actor::InterpolationMode);
+    /** Get messages to be displayed in the debug hud this frame. */
+    static dyn_arr<str> debug_message();
+    
+
+    /* ------------------------- */
+    /* -- Actor Interpolation -- */
+    /* ------------------------- */
+    
+    static Interpolation interpolation();
+    static void set_interpolation(Interpolation);
+
+    
+    /* ------------------------- */
+    /* --    Actor Physics    -- */
+    /* ------------------------- */
+    
+    virtual void fixed_tick() override;
+    
+    static void perform_physics_step(IActor& actor);
+    static void handle_collisions(IActor& actor, bool apply_friction = true);
+    
+
+    /* ------------------------- */
+    /* -- Player Registration -- */
+    /* ------------------------- */
 
     static PlayerActor& register_player(const str& ident, const str& display_name, bool broadcast = true, bool fail_quiet = false);
     static void unregister_player(const str& ident, bool broadcast = true, bool fail_quiet = false);
     static opt_ref<PlayerActor> get_player_actor(const str& ident);
 
     static void update_player_authority_states();
-    
-    virtual void fixed_tick() override;
-    
-    static void perform_physics_step(IActor& actor);
-    static void handle_collisions(IActor& actor, bool apply_friction = true);
 
-    /// Messages to be displayed in the debug hud
-    static dyn_arr<str> debug_message();
 private:
-    static constexpr actor::InterpolationMode CLIENT_DEFAULT_INTERPOLATION = actor::InterpolationMode::LINEAR_MOTION;
-    static constexpr actor::InterpolationMode SERVER_DEFAULT_INTERPOLATION = actor::InterpolationMode::NONE;
-    
-    hashmap<str, PlayerActor> _players;
+    Interpolation _interpolation;
 
-    actor::InterpolationMode _interpolation_mode;
     bstmap<IActor*, INetworkedActor*> _known_actors;
+    // This has to be declared after _known_actors or the program will crash while exiting. Singletons were a mistake.
+    hashmap<str, PlayerActor> _players;
     
     virtual result<LogicalPacket, str> get_requested_message(const packet_id& id) const override;
     virtual result<success_t, str> read_message(LogicalPacket&&) override;

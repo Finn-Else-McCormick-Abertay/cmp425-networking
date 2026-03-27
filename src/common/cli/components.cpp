@@ -32,11 +32,8 @@ lyra::cli cli::interpolation() {
             [](str arg){
                 // This is fucked but it's the best way I have to deserialise this. Don't ask me why I have to add quotes, I do not know.
                 str normalized_arg = arg | views::transform(toupper) | ranges::to<str>();
-                auto result = glz::read_json<actor::InterpolationMode>(fmt::format("\"{}\"", normalized_arg));
-                if (result) {
-                    actor::InterpolationMode mode = *result;
-                    ActorManager::set_interpolation_mode(mode);
-                }
+                auto result = glz::read_json<Interpolation::Value>(fmt::format("\"{}\"", normalized_arg));
+                if (result) ActorManager::set_interpolation(*result);
                 else print<warning>("{} is not a valid interpolation mode.", normalized_arg);
             }, "interpolation")
             ["-i"]["--interpolation"]

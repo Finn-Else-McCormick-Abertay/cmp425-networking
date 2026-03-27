@@ -7,6 +7,8 @@
 namespace actor { enum class NetworkMode { NONE, AUTHORITY, LISTENER, RELAY }; }
 ENUM_FORMATTER(actor::NetworkMode, (NONE, AUTHORITY, LISTENER, RELAY));
 
+class ActorManager;
+
 class INetworkedActor : public IActor, public INetworked {
 public:
     actor::NetworkMode network_mode() const; void set_network_mode(actor::NetworkMode);
@@ -15,6 +17,10 @@ public:
 
 protected:
     actor::NetworkMode _network_mode;
+    
+    friend class ActorManager;
+    struct MotionInfo { fvec2 position; fvec2 velocity; fvec2 acceleration; };
+    bstmap<uint64, MotionInfo> _recieved_motion_info;
 
     INetworkedActor(const network_id&, const frect2& rect = frect2(), actor::PhysicsMode = actor::PhysicsMode::DYNAMIC, actor::NetworkMode = actor::NetworkMode::NONE);
     INetworkedActor(INetworkedActor&&);

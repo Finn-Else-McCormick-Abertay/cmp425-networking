@@ -15,12 +15,29 @@
 
 using namespace vmath_hpp;
 
+/* ------------------------------- */
+/* -- Singleton Lifecycle Logic -- */
+/* ------------------------------- */
+
 DEFINE_SINGLETON(ActorManager);
 
 ActorManager::ActorManager() : INetworked("singleton#actor_manager"_netid) {}
 
-void ActorManager::Registry::__register(IActor& actor)   { inst()._known_actors.try_emplace(&actor, nullptr); }
-void ActorManager::Registry::__unregister(IActor& actor) { inst()._known_actors.erase(&actor); }
+void ActorManager::init() {
+    // This is necessary cause of the weird pattern I've locked myself into where static initialisation order is something I have to consider
+    inst();
+}
+
+/* ----------------------------------------- */
+/* -- IActor and INetworkedActor Registry -- */
+/* ----------------------------------------- */
+
+void ActorManager::Registry::__register(IActor& actor)   {
+    inst()._known_actors.try_emplace(&actor, nullptr);
+}
+void ActorManager::Registry::__unregister(IActor& actor) {
+    inst()._known_actors.erase(&actor);
+}
 
 void ActorManager::Registry::__register(INetworkedActor& net_actor)   {
     IActor* root_actor = dynamic_cast<IActor*>(&net_actor);
@@ -36,25 +53,21 @@ void ActorManager::Registry::__unregister(INetworkedActor& net_actor) {
     if (inst()._known_actors.contains(root_actor)) inst()._known_actors[root_actor] = nullptr;
 }
 
-void ActorManager::init() {
-    // This is necessary cause of the weird pattern I've locked myself into where static initialisation order is something I have to consider
-    inst();
+
+/* ------------------------- */
+/* -- Actor Interpolation -- */
+/* ------------------------- */
+
+Interpolation ActorManager::interpolation() { return inst()._interpolation; }
+void ActorManager::set_interpolation(Interpolation new_mode) {
+    inst()._interpolation = new_mode;
+    print<info, ActorManager>("Set interpolation mode to {}{}", interpolation(), interpolation() == Interpolation::DEFAULT ? fmt::format(" ({})", interpolation().raw_value()) : "");
 }
 
-actor::InterpolationMode ActorManager::interpolation_mode(bool validate) {
-    if (validate && inst()._interpolation_mode == actor::InterpolationMode::DEFAULT) {
-        #ifdef CLIENT
-        return ActorManager::CLIENT_DEFAULT_INTERPOLATION;
-        #elifdef SERVER
-        return ActorManager::SERVER_DEFAULT_INTERPOLATION;
-        #endif
-    }
-    return inst()._interpolation_mode;
-}
-void ActorManager::set_interpolation_mode(actor::InterpolationMode new_mode) {
-    inst()._interpolation_mode = new_mode;
-    print<info, ActorManager>("Set interpolation mode to {}{}", new_mode, new_mode == actor::InterpolationMode::DEFAULT ? fmt::format(" ({})", interpolation_mode()) : "");
-}
+
+/* ------------------------- */
+/* --    Actor Physics    -- */
+/* ------------------------- */
 
 void ActorManager::perform_physics_step(IActor& actor) {
     if (actor.physics_mode() != actor::PhysicsMode::DYNAMIC) return;
@@ -176,6 +189,11 @@ void ActorManager::fixed_tick() {
     #endif
 }
 
+
+/* ------------------------- */
+/* -- Player Registration -- */
+/* ------------------------- */
+
 PlayerActor& ActorManager::register_player(const str& ident, const str& display_name, bool broadcast, bool fail_quiet) {
     auto [it, is_new] = inst()._players.try_emplace(ident, PlayerActor(ident, display_name));
     update_player_authority_states();
@@ -196,11 +214,8 @@ void ActorManager::unregister_player(const str& ident, bool broadcast, bool fail
 void ActorManager::update_player_authority_states() {
     str user_uid = NetworkManager::local_client().and_then([](auto& client) { return client.uid(); }).value_or("");
     for (auto& [ident, player] : inst()._players) {
-        #ifdef SERVER
-        player.set_network_mode(actor::NetworkMode::RELAY);
-        #elifdef CLIENT
-        player.set_network_mode(user_uid == ident ? actor::NetworkMode::AUTHORITY : actor::NetworkMode::LISTENER);
-        #endif
+        if constexpr (NetworkManager::is_server()) player.set_network_mode(actor::NetworkMode::RELAY);
+        else if constexpr (NetworkManager::is_client()) player.set_network_mode(user_uid == ident ? actor::NetworkMode::AUTHORITY : actor::NetworkMode::LISTENER);
     }
 }
 
@@ -208,6 +223,11 @@ opt_ref<PlayerActor> ActorManager::get_player_actor(const str& ident) {
     if (!inst()._players.contains(ident)) return nullopt;
     return ref(inst()._players.at(ident));
 }
+
+
+/* ------------------------- */
+/* --  Player Lifecycle  -- */
+/* ------------------------- */
 
 result<LogicalPacket, str> ActorManager::get_requested_message(const packet_id& id) const {
     if (id.type() == "player") {
@@ -251,9 +271,14 @@ result<success_t, str> ActorManager::read_message(LogicalPacket&& packet) {
     return err("Unknown packet type.");
 }
 
+
+/* --------------------------------- */
+/* --       Debug Messages        -- */
+/* --------------------------------- */
+
 dyn_arr<str> ActorManager::debug_message() {
     dyn_arr<str> messages {
-        fmt::format("Interpolation: {}", interpolation_mode()),
+        fmt::format("Interpolation: {}", interpolation()),
     };
     for (auto& [actor, net_actor] : inst()._known_actors) {
         str actor_info = net_actor ? fmt::format("{:<15} {:>15}", net_actor->netid(), fmt::format("({})", net_actor->network_mode())) : actor->type_id().to_str();

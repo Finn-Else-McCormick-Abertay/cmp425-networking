@@ -3,6 +3,7 @@
 #include <console.h>
 #include <system/system_manager.h>
 #include <actor/actor_manager.h>
+#include <network/network_manager.h>
 
 INetworkedActor::INetworkedActor(const network_id& network_id, const frect2& rect, actor::PhysicsMode physics_mode, actor::NetworkMode network_mode)
     : _network_mode(network_mode), IActor(network_id.type(), rect, physics_mode), INetworked(network_id) {
@@ -34,9 +35,7 @@ result<LogicalPacket, str> INetworkedActor::get_requested_message(const packet_i
 }
 
 dyn_arr<LogicalPacket> INetworkedActor::get_outstanding_messages() {
-    if (network_mode() == actor::NetworkMode::LISTENER) return {};
-
-    if (SystemManager::get_fixed_tick() % 5 == 0) {
+    if ((is_authority() || is_relay()) && SystemManager::get_fixed_tick() % 5 == 0) {
         auto packet_opt = request("motion"_packid);
         if (packet_opt) return { move(packet_opt.value()) };
     }
@@ -47,35 +46,35 @@ result<success_t, str> INetworkedActor::read_message(LogicalPacket&& packet) {
     if (packet.id.type() == "motion") {
         if (is_authority() && !packet.id.has_flag("force")) return empty_success;
 
-        fvec2 recieved_position, recieved_velocity, recieved_acceleration;
-        packet.contents >> recieved_position.x >> recieved_position.y >> recieved_velocity.x >> recieved_velocity.y >> recieved_acceleration.x >> recieved_acceleration.y;
+        MotionInfo recieved {};
+        packet.contents >> recieved.position.x >> recieved.position.y >> recieved.velocity.x >> recieved.velocity.y >> recieved.acceleration.x >> recieved.acceleration.y;
 
         int64 tick_diff = (int64)SystemManager::get_fixed_tick() - (int64)packet.time;
         auto time_diff = SystemManager::FIXED_TIMESTEP * tick_diff / 1.0s;
 
-        actor::InterpolationMode interpolation_mode = ActorManager::interpolation_mode();
-        switch (interpolation_mode) {
-            case actor::InterpolationMode::NONE: {
-                set_position(recieved_position);
+        Interpolation interpolation = ActorManager::interpolation();
+        switch (interpolation) {
+            case Interpolation::NONE: {
+                set_position(recieved.position);
             } break;
-            case actor::InterpolationMode::NONE_MOTION: {
-                set_position(recieved_position);
-                set_velocity(recieved_velocity);
-                set_acceleration(recieved_acceleration);
+            case Interpolation::NONE_MOTION: {
+                set_position(recieved.position);
+                set_velocity(recieved.velocity);
+                set_acceleration(recieved.acceleration);
             } break;
-            case actor::InterpolationMode::LINEAR_POSITION:
-            case actor::InterpolationMode::LINEAR_MOTION: {
-                fvec2 interpolated_position = recieved_position + recieved_velocity * time_diff; 
+            case Interpolation::LINEAR_POSITION:
+            case Interpolation::LINEAR_MOTION: {
+                fvec2 interpolated_position = recieved.position + recieved.velocity * time_diff; 
                 fvec2 position_delta = interpolated_position - position();
                 
                 set_position(interpolated_position);
 
                 // Ignore very out of date packets - the physics has been running locally for the actor, and this will likely be more accurate than an interpolation from an old packet
-                if (interpolation_mode == actor::InterpolationMode::LINEAR_MOTION && abs(tick_diff) <= 5) {
-                    fvec2 interpolated_velocity = recieved_velocity + recieved_acceleration * time_diff;
+                if (interpolation == Interpolation::LINEAR_MOTION && abs(tick_diff) <= 5) {
+                    fvec2 interpolated_velocity = recieved.velocity + recieved.acceleration * time_diff;
                     
                     set_velocity(interpolated_velocity);
-                    set_acceleration(recieved_acceleration);
+                    set_acceleration(recieved.acceleration);
                 }
                 
                 // If moving far enough to potentially clip through tiles, perform collision check
@@ -86,7 +85,7 @@ result<success_t, str> INetworkedActor::read_message(LogicalPacket&& packet) {
                 }
                 
             } break;
-            default: return err(fmt::format("Unhandled interpolation mode '{}'.", interpolation_mode));
+            default: return err(fmt::format("Unhandled interpolation mode '{}'.", interpolation));
         }
         return empty_success;
     }
