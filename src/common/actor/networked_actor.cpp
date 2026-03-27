@@ -35,7 +35,7 @@ result<LogicalPacket, str> INetworkedActor::get_requested_message(const packet_i
 }
 
 dyn_arr<LogicalPacket> INetworkedActor::get_outstanding_messages() {
-    if ((is_authority() || is_relay()) && SystemManager::get_fixed_tick() % 5 == 0) {
+    if (is_authority() && SystemManager::get_fixed_tick() % 5 == 0) {
         auto packet_opt = request("motion"_packid);
         if (packet_opt) return { move(packet_opt.value()) };
     }
@@ -45,6 +45,9 @@ dyn_arr<LogicalPacket> INetworkedActor::get_outstanding_messages() {
 result<success_t, str> INetworkedActor::read_message(LogicalPacket&& packet) {
     if (packet.id.type() == "motion") {
         if (is_authority() && !packet.id.has_flag("force")) return empty_success;
+        
+        // Rebroadcast
+        if (is_relay()) NetworkManager::broadcast(packet);
 
         MotionInfo recieved {};
         packet.contents >> recieved.position.x >> recieved.position.y >> recieved.velocity.x >> recieved.velocity.y >> recieved.acceleration.x >> recieved.acceleration.y;

@@ -18,9 +18,8 @@ public:
 protected:
     actor::NetworkMode _network_mode;
     
-    friend class ActorManager;
     struct MotionInfo { fvec2 position; fvec2 velocity; fvec2 acceleration; };
-    bstmap<uint64, MotionInfo> _recieved_motion_info;
+    //bstmap<uint64, MotionInfo> _recieved_motion_info; friend class ActorManager;
 
     INetworkedActor(const network_id&, const frect2& rect = frect2(), actor::PhysicsMode = actor::PhysicsMode::DYNAMIC, actor::NetworkMode = actor::NetworkMode::NONE);
     INetworkedActor(INetworkedActor&&);
