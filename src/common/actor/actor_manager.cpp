@@ -74,21 +74,25 @@ void ActorManager::perform_physics_step(IActor& actor) {
 
     auto delta = SystemManager::FIXED_TIMESTEP / 1.0s;
     actor.set_velocity(actor.velocity() + actor.acceleration() * delta);
-    actor.set_position(actor.position() + actor.velocity() * delta);
 
-    handle_collisions(actor);
+    // Move and handle collisions. Moves in multiple steps if moving fast enough to clip through tiles.
+    move_actor_respecting_collision(actor, actor.velocity() * delta);
 }
 
 void ActorManager::move_actor_respecting_collision(IActor& actor, const fvec2& motion) {
+    float step_size = TILE_SIZE / 2;
+
     float magnitude = length(motion);
-    if (magnitude > TILE_SIZE) {
-        fvec2 motion_step = vmath_hpp::normalize(motion) * TILE_SIZE;
+    if (magnitude > step_size) {
+        fvec2 normalised = vmath_hpp::normalize(motion);
+        fvec2 motion_step = normalised * step_size;
         actor.position() += motion_step;
         handle_collisions(actor);
-
+        move_actor_respecting_collision(actor, normalised * (magnitude - step_size));
     }
     else {
         actor.position() += motion;
+        handle_collisions(actor);
     }
 }
 
