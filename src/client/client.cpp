@@ -21,13 +21,13 @@
 
 int main(int argc, char** argv) {
     print<info>("Client init.");
+    handle_cli(argc, argv, cli::console() | cli::dirs() | cli::client() | cli::interpolation());
 
-    DataManager::reload();
-    InputManager::init(); InputManager::setup_default_binds();
-
-    handle_cli(argc, argv, cli::dirs() | cli::client() | cli::interpolation());
+    InputManager::init();
+    InputManager::setup_default_binds();
 
     NetworkManager::init();
+    DataManager::init();
     WorldManager::init();
     ActorManager::init();
 

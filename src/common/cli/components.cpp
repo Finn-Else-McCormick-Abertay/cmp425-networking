@@ -1,5 +1,6 @@
 #include "components.h"
 
+#include <console/print.h>
 #include <network/network_manager.h>
 #include <data/data_manager.h>
 #include <save/save_manager.h>
@@ -7,6 +8,20 @@
 #include <actor/actor_manager.h>
 #include <alias/ranges.h>
 #include <cctype>
+
+lyra::cli cli::console() {
+    return lyra::cli()
+        | lyra::opt(
+            [](bool val) { console_detail::Settings::hide_debug = val; })
+            ["--no-debug-output"]["--no-debug"]["--ndebug"]
+            ("Disable debug output.")
+            .optional()
+        | lyra::opt(
+            [](bool val) { console_detail::Settings::no_ansi = val; })
+            ["--no-ansi-output"]["--no-ansi"]["--simple-output"]
+            ("Disable use of ANSI codes in output, to make it legible if your console does not support them.")
+            .optional();
+}
 
 lyra::cli cli::dirs() {
     return lyra::cli()
@@ -68,6 +83,7 @@ lyra::cli cli::world() {
     return lyra::cli()
         | lyra::opt(
             [](str world){
+                DataManager::init();
                 if (!WorldManager::load_from_file(world)) WorldManager::create(world);
             }, "world")
             ["-w"]["--world"]

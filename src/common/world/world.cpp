@@ -120,7 +120,7 @@ result<success_t, str> World::read_message(LogicalPacket&& packet) {
                     std::to_underlying(result.error().ec), result.error().custom_error_message)
                 );
             
-            print<network_info, World>("Recieved chunk at {}[{}] on tick {}.", level_id, fmt::join(pos, ", "), packet.time);
+            print<debug, World>("Recieved chunk at {}[{}] on tick {}.", level_id, fmt::join(pos, ", "), packet.time);
             auto chunk_opt = level.set_chunk(pos, move(*result));
             // If acting as authority, rebroadcast to clients
             if (is_authority() && chunk_opt) {

@@ -1,14 +1,25 @@
 #include "print.h"
 
-//#include <chrono>
-//#include <fmt/chrono.h>
+bool console_detail::Settings::no_ansi = false;
+#ifdef NDEBUG
+bool console_detail::Settings::hide_debug = true;
+#else
+bool console_detail::Settings::hide_debug = false;
+#endif
 
-void console_impl::print(
+void console_detail::print(
     const fmt::text_style& style_text, const fmt::text_style& style_title, const fmt::text_style& style_separator,
     const str& type_name, const str& owner_name, fmt::string_view fmt, fmt::format_args args
 ) {
-    using namespace fmt;//{:%r} //styled(std::chrono::system_clock::now(), fg(DATE_COLOUR)),
-    fmt::print(
+    using namespace fmt;
+    if (console_detail::Settings::no_ansi) fmt::print(
+        "[{}{}{}] {}\n",
+        type_name,
+        owner_name.empty() ? "" : "|",
+        owner_name,
+        vformat(fmt, args)
+    );
+    else fmt::print(
         "{}{}{}{}{} {}\n",
         styled("[", style_separator),
         styled(type_name.c_str(), style_title | emphasis::bold),

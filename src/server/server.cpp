@@ -11,14 +11,12 @@
 
 #include <SFML/Window.hpp>
 
-int main(int argc, char** argv) {    
+int main(int argc, char** argv) {
     print<info>("Server init.");
+    handle_cli(argc, argv, cli::console() | cli::dirs() | cli::world() | cli::interpolation());
 
-    DataManager::reload();
-    
-    handle_cli(argc, argv, cli::dirs() | cli::world() | cli::interpolation());
-    
     NetworkManager::init();
+    DataManager::init();
     WorldManager::init();
     ActorManager::init();
 

@@ -23,6 +23,8 @@ All are optional and will take on reasonable defaults if not set, so they don't 
 | `--resource-dir {path}` | Path to the resources folder. | `resources/` |
 | `--user-dir {path}` | Path to the user data folder, where saves go. | `user/` |
 | `--interpolation {type}` | Interpolation mode to use. | `default` |
+| `--no-debug`, `--ndebug` | Disable debug output. | `false` |
+| `--no-ansi` | Disable ANSI formatting in output. | `false` |
 | ***Client-only*** | | |
 | `--user {val}`, `-u {val}` | Username to connect to the server under. | Connect as guest |
 | `--observer`, `-o` | Do not create a player for this client. | |

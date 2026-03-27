@@ -16,6 +16,8 @@
 
 DEFINE_SINGLETON(DataManager);
 
+void DataManager::init() { if (!inst()._initialised) reload(); }
+
 namespace data_impl {
     struct Registry {
         hashmap<str, data::definition::Tile> tiles;
@@ -84,6 +86,8 @@ void DataManager::reload() {
     // Setup mappings (this uses the set so they're assigned in alphabetical order rather than declaration order)
     uint32 used_mappings = 0;
     for (auto& id : ordered_ids) { inst().map_id(id, used_mappings); ++used_mappings; }
+
+    inst()._initialised = true;
 
     print<success, DataManager>("Created id mappings.");
     #ifdef CLIENT

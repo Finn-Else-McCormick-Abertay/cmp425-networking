@@ -15,6 +15,7 @@
 
 class DataManager { DECL_SINGLETON(DataManager);
 public:
+    static void init();
     static void reload();
 
     static opt_cref<data::TileHandle> get_tile(const id&);
@@ -29,6 +30,7 @@ public:
     static const fs::path& resources_folder();
     static void set_resources_folder(const fs::path&);
 private:
+    bool _initialised = false;
     hashmap<id, data::TileHandle> _tile_handles;
     hashmap<id, data::ItemHandle> _item_handles;
 

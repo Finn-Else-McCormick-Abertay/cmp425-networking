@@ -5,6 +5,7 @@
 #include <regex>
 #include <world/coord_helpers.h>
 #include <maths/rect.h>
+#include <data/data_manager.h>
 
 DEFINE_SINGLETON(WorldManager);
 

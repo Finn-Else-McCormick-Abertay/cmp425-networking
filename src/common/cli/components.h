@@ -7,6 +7,7 @@
 #include <lyra/lyra.hpp>
 
 namespace cli {
+    lyra::cli console();
     lyra::cli dirs();
     lyra::cli interpolation();
     lyra::cli client();

@@ -11,7 +11,14 @@
 
 #include <util/helper/demangle.h>
 
-namespace console_impl {
+namespace console_detail {
+    struct Settings {
+        Settings() = delete;
+
+        static bool no_ansi;
+        static bool hide_debug;
+    };
+
     static constexpr auto DATE_COLOUR = fmt::color::turquoise;
     static constexpr auto UNKNOWN_COLOUR = fmt::color::red;
 
@@ -19,6 +26,7 @@ namespace console_impl {
     template<typename T> concept has_text_colour = requires(T) { { T::TEXT_COLOUR } -> std::convertible_to<fmt::detail::color_type>; };
     template<typename T> concept has_title_colour = requires(T) { { T::TITLE_COLOUR } -> std::convertible_to<fmt::detail::color_type>; };
     template<typename T> concept has_separator_colour = requires(T) { { T::SEPARATOR_COLOUR } -> std::convertible_to<fmt::detail::color_type>; };
+    template<typename T> concept has_is_debug = requires(T) { { T::IS_DEBUG } -> std::convertible_to<bool>; };
 
     void print(
         const fmt::text_style& style_text, const fmt::text_style& style_title, const fmt::text_style& style_separator,
@@ -27,21 +35,27 @@ namespace console_impl {
 }
 
 template<typename Ctx, typename Owner, typename... Args> void print(fmt::format_string<Args...> fmt, Args&&... args) {
+    if constexpr (console_detail::has_is_debug<Ctx>) {
+        if (console_detail::Settings::hide_debug && Ctx::IS_DEBUG) return;
+    }
+
     str ctx_name;
-    if constexpr(console_impl::has_name<Ctx>) ctx_name = Ctx::NAME;
+    if constexpr(console_detail::has_name<Ctx>) ctx_name = Ctx::NAME;
     else ctx_name = clean_type_name(typeid(Ctx).name());
     
     str owner_name;
     if constexpr(!std::same_as<Owner, void>) owner_name = clean_type_name(typeid(Owner).name());
 
-    fmt::detail::color_type text_colour = console_impl::UNKNOWN_COLOUR;
-    if constexpr (console_impl::has_text_colour<Ctx>) text_colour = Ctx::TEXT_COLOUR;
-    fmt::detail::color_type title_colour = text_colour;
-    if constexpr (console_impl::has_title_colour<Ctx>) title_colour = Ctx::TITLE_COLOUR;
-    fmt::detail::color_type separator_colour = title_colour;
-    if constexpr (console_impl::has_separator_colour<Ctx>) separator_colour = Ctx::SEPARATOR_COLOUR;
+    fmt::detail::color_type text_colour = console_detail::UNKNOWN_COLOUR;
+    if constexpr (console_detail::has_text_colour<Ctx>) text_colour = Ctx::TEXT_COLOUR;
 
-    console_impl::print(
+    fmt::detail::color_type title_colour = text_colour;
+    if constexpr (console_detail::has_title_colour<Ctx>) title_colour = Ctx::TITLE_COLOUR;
+
+    fmt::detail::color_type separator_colour = title_colour;
+    if constexpr (console_detail::has_separator_colour<Ctx>) separator_colour = Ctx::SEPARATOR_COLOUR;
+
+    console_detail::print(
         fmt::fg(text_colour), fmt::fg(title_colour), fmt::fg(separator_colour),
         ctx_name, owner_name, fmt, fmt::make_format_args(args...)
     );
