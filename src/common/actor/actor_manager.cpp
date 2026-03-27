@@ -79,6 +79,19 @@ void ActorManager::perform_physics_step(IActor& actor) {
     handle_collisions(actor);
 }
 
+void ActorManager::move_actor_respecting_collision(IActor& actor, const fvec2& motion) {
+    float magnitude = length(motion);
+    if (magnitude > TILE_SIZE) {
+        fvec2 motion_step = vmath_hpp::normalize(motion) * TILE_SIZE;
+        actor.position() += motion_step;
+        handle_collisions(actor);
+
+    }
+    else {
+        actor.position() += motion;
+    }
+}
+
 void ActorManager::handle_collisions(IActor& actor, bool apply_friction) {
     actor.set_grounded(false);
 

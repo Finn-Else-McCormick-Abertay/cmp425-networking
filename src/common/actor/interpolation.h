@@ -4,8 +4,23 @@
 #include <network/network_manager.h>
 
 DECL_NAMESPACED_ENUM_FORMATTED_GLAZED(actor_detail, enum, InterpolationValue, (
-    DEFAULT,
-    NONE, NONE_MOTION, LINEAR_POSITION, LINEAR_MOTION,
+    /** Default interpolation value for this network type. See client and server values below. */
+    DEFAULT, 
+    
+    /** Directly accept sent position. */
+    NONE,
+    
+    /** Accept sent position, velocity and acceleration; keep simulating physics locally. */
+    MOTION, 
+
+    /** Linearly interpolate position based on sent position and velocity, and the amount of ticks since the packet was sent. */
+    LINEAR_POSITION,
+    
+    /** Linearly interpolate position and velocity; keep simulating physics locally.
+     * Falls back to behaving like MOTION if packets are too far out of date, as interpolation from a very old packet is likely to be inaccurate. */
+    LINEAR_MOTION,
+
+    // Not a value. Used for the cycling logic.
     __COUNT__
 ));
 

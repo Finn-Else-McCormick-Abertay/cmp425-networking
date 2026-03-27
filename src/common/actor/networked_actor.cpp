@@ -59,37 +59,44 @@ result<success_t, str> INetworkedActor::read_message(LogicalPacket&& packet) {
         switch (interpolation) {
             case Interpolation::NONE: {
                 set_position(recieved.position);
+                set_velocity(fvec2());
+                set_acceleration(fvec2());
             } break;
-            case Interpolation::NONE_MOTION: {
+            case Interpolation::MOTION: {
                 set_position(recieved.position);
                 set_velocity(recieved.velocity);
                 set_acceleration(recieved.acceleration);
             } break;
             case Interpolation::LINEAR_POSITION:
             case Interpolation::LINEAR_MOTION: {
-                fvec2 interpolated_position = recieved.position + recieved.velocity * time_diff; 
-                fvec2 position_delta = interpolated_position - position();
-                
-                set_position(interpolated_position);
-
                 // Ignore very out of date packets - the physics has been running locally for the actor, and this will likely be more accurate than an interpolation from an old packet
-                if (interpolation == Interpolation::LINEAR_MOTION && abs(tick_diff) <= 5) {
+                if (abs(tick_diff) >= 5) {
+                    // If we haven't accepted a packet in a while, treat it like MOTION
+                    if ((SystemManager::get_fixed_tick() - _last_recieved_packet_time) > 20) {
+                        set_position(recieved.position);
+                        set_velocity(recieved.velocity);
+                        set_acceleration(recieved.acceleration);
+                    }
+                    return empty_success;
+                }
+                
+                // Move actor to interpolated position, doing so in multiple steps with a collision check after each one if distance is great enough to clip through tiles.
+                set_position(recieved.position);
+                ActorManager::move_actor_respecting_collision(*this, recieved.velocity * time_diff);
+                
+                if (interpolation == Interpolation::LINEAR_MOTION) {
                     fvec2 interpolated_velocity = recieved.velocity + recieved.acceleration * time_diff;
-                    
                     set_velocity(interpolated_velocity);
                     set_acceleration(recieved.acceleration);
                 }
-                
-                // If moving far enough to potentially clip through tiles, perform collision check
-                float position_delta_magnitude = vmath_hpp::length(position_delta);
-                //print<debug, INetworkedActor>("Pos diff {}", position_delta_magnitude);
-                if (position_delta_magnitude >= 4) {
-                    ActorManager::handle_collisions(*this, false);
+                else {
+                    set_velocity(fvec2());
+                    set_acceleration(fvec2());
                 }
-                
             } break;
             default: return err(fmt::format("Unhandled interpolation mode '{}'.", interpolation));
         }
+        _last_recieved_packet_time = SystemManager::get_fixed_tick();
         return empty_success;
     }
     return err("");

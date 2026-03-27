@@ -36,6 +36,7 @@ public:
     virtual void fixed_tick() override;
     
     static void perform_physics_step(IActor& actor);
+    static void move_actor_respecting_collision(IActor& actor, const fvec2& motion);
     static void handle_collisions(IActor& actor, bool apply_friction = true);
     
 
