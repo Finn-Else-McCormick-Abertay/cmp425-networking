@@ -93,6 +93,24 @@ void InputManager::setup_default_binds() {
 
     bind(Controller::Axis::X, internal_actions::_horizontal_move);
     bind(Controller::Axis::Y, internal_actions::_vertical_move);
+
+    // Hotbar (block selection)
+    bind(ScanCode::Num1, actions::hotbar::slot_1);
+    bind(ScanCode::Num2, actions::hotbar::slot_2);
+    bind(ScanCode::Num3, actions::hotbar::slot_3);
+    bind(ScanCode::Num4, actions::hotbar::slot_4);
+    bind(ScanCode::Num5, actions::hotbar::slot_5);
+    bind(ScanCode::Num6, actions::hotbar::slot_6);
+    bind(ScanCode::Num7, actions::hotbar::slot_7);
+    bind(ScanCode::Num8, actions::hotbar::slot_8);
+    bind(ScanCode::Num9, actions::hotbar::slot_9);
+    bind(ScanCode::Num0, actions::hotbar::slot_10);
+
+    bind(ScanCode::Left, actions::hotbar::previous_slot);
+    bind(ScanCode::Right, actions::hotbar::next_slot);
+    
+    bind(Controller::Button::LB, actions::hotbar::previous_slot);
+    bind(Controller::Button::RB, actions::hotbar::next_slot);
 }
 
 void InputManager::receive_event(const sf::Event& event) {

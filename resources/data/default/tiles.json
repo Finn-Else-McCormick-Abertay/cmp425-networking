@@ -5,6 +5,7 @@
             "collision": "none"
         },
         "stone": {},
-        "dirt": {}
+        "dirt": {},
+        "unknown": {}
     }
 }

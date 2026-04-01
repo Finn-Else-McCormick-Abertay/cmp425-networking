@@ -37,6 +37,22 @@ namespace actions {
         .modifier = mod::constrain_length_to_norm
     );
 
+    namespace hotbar {
+        INPUT_ACTION(slot_1, bool);
+        INPUT_ACTION(slot_2, bool);
+        INPUT_ACTION(slot_3, bool);
+        INPUT_ACTION(slot_4, bool);
+        INPUT_ACTION(slot_5, bool);
+        INPUT_ACTION(slot_6, bool);
+        INPUT_ACTION(slot_7, bool);
+        INPUT_ACTION(slot_8, bool);
+        INPUT_ACTION(slot_9, bool);
+        INPUT_ACTION(slot_10, bool);
+
+        INPUT_ACTION(next_slot, bool);
+        INPUT_ACTION(previous_slot, bool);
+    }
+
     namespace debug {
         INPUT_ACTION(tile, bool);
         INPUT_ACTION(tick, bool);

@@ -43,6 +43,8 @@ All are optional and will take on reasonable defaults if not set, so they don't 
 
 `LMB` to place blocks, `RMB` to break blocks.
 
+Use the number keys to switch between different blocks.
+
 #### Debug
 
 | Keybind | Description |
