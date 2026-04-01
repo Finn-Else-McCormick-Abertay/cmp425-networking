@@ -232,6 +232,11 @@ result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& add
                 if (client.has_player()) broadcast("singleton#actor_manager"_netid, packet_id("player", { "existing", client.uid().value() }), address);
             }
 
+            if constexpr (is_server()) {
+                broadcast(LogicalPacket("lifecycle#answer"_netid, "sync"_packid, SystemManager::get_fixed_tick(), LogicalPacket::MessageType::Lifecycle), address);
+            }
+            
+
             return empty_success;
         }
         else {
@@ -251,9 +256,16 @@ result<success_t, str> NetworkManager::handle_lifecycle(const SocketAddress& add
         }
     }
     else if (packet.id.type() == "sync") {
-        uint64 sync_fixed_tick = packet.time;
-        SystemManager::jump_fixed_tick(sync_fixed_tick);
-        return empty_success;
+        if constexpr (is_server()) {
+            print<error, NetworkManager>("Sync packet received by server.");
+            return err("Sync packet received by server.");
+        }
+        else {
+            uint64 sync_fixed_tick = packet.time;
+            SystemManager::jump_fixed_tick(sync_fixed_tick);
+    
+            return empty_success;
+        }
     }
     else return err(fmt::format("Unknown packet type '{}'.", packet.id.type()));
 
@@ -367,9 +379,9 @@ void NetworkManager::send(LogicalPacket&& packet, const opt<SocketAddress>& addr
 
 void NetworkManager::perform_network_tick() {
     // In server mode, we send 'sync' lifecycle packets every 20 ticks or so to ensure the clocks stay in sync
-    if constexpr (is_server) {
+    if constexpr (is_server()) {
         if (SystemManager::get_fixed_tick() % 20 == 0)
-            inst().send(LogicalPacket("lifecycle#answer"_netid, "sync"_packid, nullopt, LogicalPacket::MessageType::Lifecycle), nullopt);
+            broadcast(LogicalPacket("lifecycle#answer"_netid, "sync"_packid, SystemManager::get_fixed_tick(), LogicalPacket::MessageType::Lifecycle), nullopt);
     }
 
     /* ---------------------- */
